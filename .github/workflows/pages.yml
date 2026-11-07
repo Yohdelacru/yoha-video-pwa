@@ -1,0 +1,56 @@
+# Publica YOHA VIDEO en GitHub Pages (gratis en repositorios públicos). No usa secretos.
+name: Publicar en GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias
+        run: npm ci --no-audit --no-fund
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+      - name: Compilar (incluye escaneo de secretos que bloquea la publicación)
+        run: npm run build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comprobar la URL pública
+        run: |
+          URL="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o page.html -w '%{http_code}' "$URL") && [ "$code" = 200 ] && grep -q 'YOHA VIDEO' page.html && break
+            sleep 20
+          done
+          echo "HTTP $code en $URL"; test "$code" = 200
+          curl -sf "${URL}manifest.webmanifest" >/dev/null
+          curl -sf "${URL}sw.js" >/dev/null
+          curl -sfI "${URL}ffmpeg/ffmpeg-core.wasm" | grep -i 'application/wasm'

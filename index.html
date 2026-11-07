@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval' https://accounts.google.com/gsi/client; worker-src 'self' blob:; connect-src 'self' blob: data: https://www.googleapis.com https://youtubeanalytics.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://ntfy.sh; img-src 'self' blob: data: https://*.ggpht.com https://*.googleusercontent.com https://i.ytimg.com; media-src 'self' blob: mediastream:; style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style; frame-src https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#0b1020">
+<meta name="description" content="YOHA VIDEO — editor de video gratuito que funciona en tu dispositivo. Une clips, imágenes, títulos, música, narración y subtítulos y exporta MP4.">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icons/apple-180.png">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Yoha Video · IDC Entertainment</title>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><img src="./icon.svg" alt="" width="34" height="34"><div><b>YOHA VIDEO</b><small>IDC Entertainment · costo cero</small></div></div>
+  <button id="installBtn" class="ghost" hidden>Instalar app</button>
+</header>
+<nav class="tabs" role="tablist" aria-label="Secciones">
+  <button role="tab" data-tab="panel" aria-selected="true">🏠 Panel</button>
+  <button role="tab" data-tab="director">🎬 Crear video</button>
+  <button role="tab" data-tab="producciones">🎞 Mis producciones</button>
+  <button role="tab" data-tab="series">📺 Mis series</button>
+  <button role="tab" data-tab="editor">✂️ Editor IA</button>
+  <button role="tab" data-tab="personajes">🎭 Personajes</button>
+  <button role="tab" data-tab="radar">📡 Radar Viral</button>
+  <button role="tab" data-tab="guardian">🛡 Protección</button>
+  <button role="tab" data-tab="marketing">📣 Marketing</button>
+  <button role="tab" data-tab="revenue">📈 Revenue</button>
+  <button role="tab" data-tab="bank">🏦 Yoha Bank</button>
+  <button role="tab" data-tab="calendario">🗓 Calendario</button>
+  <button role="tab" data-tab="aprobaciones">✅ Pendientes</button>
+  <button role="tab" data-tab="publicados">▶️ Publicados</button>
+  <button role="tab" data-tab="config">⚙️ Configuración</button>
+  <button role="tab" data-tab="ia">✨ Clips IA</button>
+  <button role="tab" data-tab="ayuda">❓ Ayuda</button>
+</nav>
+<main>
+
+<!-- ───────── NUEVAS SECCIONES (renderizadas por src/studio.js) ───────── -->
+<section id="tab-panel" class="tab"></section>
+<section id="tab-director" class="tab" hidden></section>
+<section id="tab-obra" class="tab" hidden></section>
+<section id="tab-producciones" class="tab" hidden></section>
+<section id="tab-series" class="tab" hidden></section>
+<section id="tab-radar" class="tab" hidden></section>
+<section id="tab-guardian" class="tab" hidden></section>
+<section id="tab-marketing" class="tab" hidden></section>
+<section id="tab-revenue" class="tab" hidden></section>
+<section id="tab-bank" class="tab" hidden></section>
+<section id="tab-calendario" class="tab" hidden></section>
+<section id="tab-aprobaciones" class="tab" hidden></section>
+<section id="tab-publicados" class="tab" hidden></section>
+<section id="tab-config" class="tab" hidden></section>
+
+<!-- ───────── EDITOR ───────── -->
+<section id="tab-editor" class="tab" hidden>
+  <div class="grid2">
+    <div class="card">
+      <div class="cmdbar"><input id="edCmd" placeholder="Escribe una orden: «haz el video más corto», «formato vertical», «título: Capítulo 1», «baja la música»…" aria-label="Orden de edición"><button id="edCmdBtn" class="secondary">Aplicar</button></div>
+      <p id="edCmdStatus" class="status small"></p>
+      <h2>1 · Agrega material</h2>
+      <label class="drop" id="drop">
+        <input id="addFiles" type="file" accept="video/*,image/*,.zip" multiple>
+        <span><b>Toca para elegir</b> o arrastra videos, fotos o el .zip de Clips IA</span>
+        <small>MP4, MOV, WEBM, JPG, PNG, WEBP · todo se procesa en tu dispositivo</small>
+      </label>
+      <p id="addStatus" class="muted" aria-live="polite"></p>
+      <div class="row wrap"><button id="addIntro" class="secondary small">+ Intro IDC (5 s)</button><button id="addOutro" class="secondary small">+ Cierre IDC (20 s)</button></div>
+      <h2>2 · Línea de tiempo <span id="totalDur" class="pill">0:00</span></h2>
+      <p class="muted small">Arrastra ☰ para reordenar. Toca un elemento para recortarlo o ponerle título y subtítulo.</p>
+      <ol id="timeline" class="timeline"></ol>
+      <p id="emptyTl" class="empty">Aún no hay elementos.</p>
+    </div>
+
+    <div class="card">
+      <h2>3 · Formato y audio</h2>
+      <div class="row">
+        <label>Formato<select id="aspect"></select></label>
+        <label>Calidad<select id="res"></select></label>
+      </div>
+      <div class="row">
+        <label>Relleno al cambiar formato<select id="fill"><option value="blur">Fondo difuminado</option><option value="black">Barras negras</option><option value="cover">Llenar (recorta)</option></select></label>
+        <label>Velocidad de exportación<select id="quality"><option value="fast">Rápida</option><option value="better">Mejor calidad (más lenta)</option></select></label>
+      </div>
+      <label>Volumen del audio original de los clips <output id="clipVolOut">100%</output><input id="clipVol" type="range" min="0" max="1.5" step="0.05" value="1"></label>
+
+      <fieldset><legend>🎵 Música de fondo</legend>
+        <input id="music" type="file" accept="audio/*">
+        <div class="row"><span id="musicName" class="muted small">Sin música</span><button id="musicClear" class="ghost small" hidden>Quitar</button></div>
+        <label>Volumen <output id="musicVolOut">35%</output><input id="musicVol" type="range" min="0" max="1" step="0.05" value="0.35"></label>
+        <p class="muted small">Usa solo música con derechos de uso (por ejemplo, la Biblioteca de audio de YouTube).</p>
+      </fieldset>
+
+      <fieldset><legend>🎙️ Narración</legend>
+        <div class="row">
+          <button id="recBtn" class="secondary">● Grabar con el micrófono</button>
+          <label class="filebtn secondary">Subir audio<input id="narrFile" type="file" accept="audio/*" hidden></label>
+        </div>
+        <p id="narrStatus" class="muted small">Sin narración. También puedes generar voces gratuitas con el notebook (Kokoro).</p>
+        <audio id="narrPreview" controls hidden></audio>
+        <div class="row">
+          <label>Volumen <output id="narrVolOut">100%</output><input id="narrVol" type="range" min="0" max="2" step="0.05" value="1"></label>
+          <label>Empieza en (s)<input id="narrDelay" type="number" min="0" step="0.5" value="0"></label>
+        </div>
+        <button id="narrClear" class="ghost small" hidden>Quitar narración</button>
+      </fieldset>
+
+      <fieldset><legend>💬 Subtítulos</legend>
+        <label class="check"><input id="burnSubs" type="checkbox" checked> Dibujar subtítulos en el video</label>
+        <label class="check"><input id="watermark" type="checkbox"> Marca de agua IDC Entertainment (esquina inferior)</label>
+        <p class="muted small">Escribe el subtítulo de cada elemento en la línea de tiempo. Al exportar también obtienes el archivo .srt.</p>
+      </fieldset>
+
+      <h2>4 · Exportar</h2>
+      <div class="row">
+        <button id="exportBtn" class="primary big">Generar MP4</button>
+        <button id="cancelBtn" class="ghost" hidden>Cancelar</button>
+      </div>
+      <progress id="progress" max="100" value="0" hidden></progress>
+      <p id="exportStatus" class="status" role="status" aria-live="polite">Listo.</p>
+      <div id="result" hidden>
+        <video id="preview" controls playsinline></video>
+        <div class="row wrap">
+          <a id="dlMp4" class="btn primary" download="yoha-video.mp4">⬇ Descargar MP4</a>
+          <a id="dlSrt" class="btn secondary" download="yoha-subtitulos.srt" hidden>⬇ Subtítulos .srt</a>
+          <button id="shareBtn" class="secondary" hidden>Compartir</button>
+          <button id="toReview" class="secondary">Enviar a revisión…</button>
+        </div>
+        <p id="resultInfo" class="muted small"></p>
+      </div>
+      <p class="muted small" id="memNote">Consejo: en celulares usa 360p–720p y videos cortos. Todo ocurre en tu dispositivo; nada se sube a servidores.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── PRODUCCIÓN ───────── -->
+<section id="tab-produccion" class="tab" hidden>
+  <div class="card">
+    <h2>Idea → Guion → Personajes → Escenas → Voces → Montaje</h2>
+    <p class="muted">Crea la estructura de tu película, novela, serie, documental, comercial o videoclip. La plantilla <b>no usa IA</b>: puedes editarla a mano o pedir el guion a un asistente gratuito (o a YOHA AI) y pegarlo aquí. Luego exporta el <b>paquete de producción</b> para generar los clips en el notebook gratuito.</p>
+    <label>Idea<textarea id="pIdea" rows="3" placeholder="Ej.: una perrita rescatada que encuentra a su familia en Santo Domingo"></textarea></label>
+    <div class="row wrap">
+      <label>Tipo de contenido<select id="pGenre"></select></label>
+      <label>Estilo visual<select id="pStyle"></select></label>
+      <label>Formato<select id="pAspect"><option value="16:9">16:9</option><option value="9:16">9:16</option><option value="1:1">1:1</option></select></label>
+      <label>Duración (s)<input id="pSeconds" type="number" min="5" max="3600" value="60"></label>
+      <label>Escenas<input id="pScenes" type="number" min="1" max="40" value="7"></label>
+    </div>
+    <fieldset><legend>Personajes del reparto</legend><div id="pCast" class="chips"></div><p class="muted small">Crea personajes en la pestaña Personajes.</p></fieldset>
+    <div class="row wrap">
+      <button id="pPlan" class="primary">Crear estructura</button>
+      <button id="pCopyPrompt" class="secondary">Copiar instrucción para asistente IA</button>
+      <button id="pPasteBtn" class="secondary">Pegar guion JSON</button>
+    </div>
+    <textarea id="pPaste" rows="5" placeholder='Pega aquí la respuesta JSON del asistente: {"scenes":[...]}' hidden></textarea>
+    <button id="pImport" class="secondary" hidden>Importar guion</button>
+    <p id="pStatus" class="status"></p>
+  </div>
+  <div id="pSceneList"></div>
+  <div class="card" id="pExportCard" hidden>
+    <h2>Paquete de producción</h2>
+    <label class="check"><input id="pPhotos" type="checkbox"> Incluir fotos de referencia autorizadas (para imagen-a-video)</label>
+    <div class="row wrap">
+      <button id="pDownload" class="primary">⬇ Descargar yoha-produccion.json</button>
+      <button id="pScriptTxt" class="secondary">⬇ Guion en texto</button>
+    </div>
+    <p class="muted small">Sube este archivo al notebook de Kaggle/Colab (pestaña Clips IA). El notebook genera un clip por escena y te devuelve un .zip que este editor importa en orden, con subtítulos y narración.</p>
+  </div>
+</section>
+
+<!-- ───────── PERSONAJES ───────── -->
+<section id="tab-personajes" class="tab" hidden>
+  <div class="grid2">
+    <div class="card">
+      <h2>YOHA Character Identity Engine</h2>
+      <p class="muted small">Define cada personaje una vez y reutilízalo en todos tus capítulos. La continuidad se apoya en: descripción fija, vestuario, semilla y fotos de referencia. <b>No garantiza un rostro idéntico</b>: el notebook mide el parecido y marca escenas a regenerar.</p>
+      <form id="charForm">
+        <input type="hidden" id="cId">
+        <label>Nombre<input id="cName" required maxlength="60"></label>
+        <label>Papel<input id="cRole" maxlength="80" placeholder="protagonista, narradora, villano…"></label>
+        <label>Apariencia física (en inglés funciona mejor con los modelos)<textarea id="cLook" rows="3" required maxlength="600" placeholder="woman in her 40s, warm brown skin, curly black shoulder-length hair, brown eyes, small mole on left cheek"></textarea></label>
+        <label>Vestuario<input id="cWardrobe" maxlength="300" placeholder="navy blue blazer, white blouse, gold hoop earrings"></label>
+        <label>Personalidad<input id="cPersonality" maxlength="300" placeholder="noble, valiente, terca cuando se trata de su familia"></label>
+        <label>Historia<textarea id="cHistory" rows="2" maxlength="1500" placeholder="De dónde viene, qué quiere, qué esconde"></textarea></label>
+        <label>Relaciones (una por línea: Nombre — tipo)<textarea id="cRelations" rows="2" maxlength="800" placeholder="Danilo — amor&#10;Luz María — rivalidad"></textarea></label>
+        <label>Emoción habitual<select id="cEmotion"><option value="neutral">Neutral</option><option value="feliz">Alegre</option><option value="triste">Melancólica</option><option value="enfado">Irritable</option><option value="determinacion">Decidida</option><option value="amor">Romántica</option></select></label>
+        <div class="row">
+          <label>Voz (Kokoro, español)<select id="cVoice"><option value="ef_dora">ef_dora · femenina</option><option value="em_alex">em_alex · masculina</option><option value="em_santa">em_santa · masculina grave</option></select></label>
+          <label>Voz en inglés<select id="cVoiceEn"><option value="af_heart">af_heart · femenina</option><option value="af_bella">af_bella · femenina</option><option value="am_michael">am_michael · masculina</option><option value="am_adam">am_adam · masculina</option></select></label>
+          <label>Semilla<input id="cSeed" type="number" min="0" max="2147483647"></label>
+        </div>
+        <fieldset><legend>Fotos de referencia (opcional)</legend>
+          <input id="cPhotos" type="file" accept="image/jpeg,image/png,image/webp" multiple>
+          <div id="cPhotoList" class="thumbs"></div>
+          <label class="check"><input id="cConsent" type="checkbox"> Tengo autorización de la persona que aparece (o soy yo) para usar su imagen y voz en videos generados.</label>
+          <label>¿Quién autoriza?<input id="cConsentBy" maxlength="80" placeholder="Nombre de la persona"></label>
+          <p class="muted small">Las fotos se guardan solo en este dispositivo. No uses rostros de terceros, famosos o menores sin permiso.</p>
+        </fieldset>
+        <div class="row"><button class="primary">Guardar personaje</button><button type="button" id="cReset" class="ghost">Nuevo</button></div>
+        <p id="cStatus" class="status"></p>
+      </form>
+    </div>
+    <div class="card"><h2>Mis personajes</h2><div id="charList" class="charlist"></div></div>
+  </div>
+</section>
+
+<!-- ───────── CLIPS IA ───────── -->
+<section id="tab-ia" class="tab" hidden>
+  <div class="card">
+    <h2>Generación de video con IA — gratis en Kaggle o Google Colab</h2>
+    <p>La generación necesita una GPU que tu navegador no tiene. Usa el notebook gratuito <b>YOHA_VIDEO_Kaggle_Colab_Gratis.ipynb</b> (guion con Qwen2.5-7B, video con Wan, voces Kokoro ES/EN, subtítulos, labios experimentales):</p>
+    <ol class="steps">
+      <li>Descarga el notebook: <a id="nbLink" href="./notebook/YOHA_VIDEO_Kaggle_Colab_Gratis.ipynb" download>YOHA_VIDEO_Kaggle_Colab_Gratis.ipynb</a>.</li>
+      <li><b>Kaggle</b> (recomendado, ~30 h de GPU gratis por semana, requiere verificar tu teléfono): kaggle.com → Create → Notebook → File → Import notebook. En el panel derecho: Accelerator → <b>GPU T4 x2</b> e Internet → <b>On</b>.<br><b>Colab</b>: colab.research.google.com → Subir → Entorno de ejecución → Cambiar tipo → <b>T4 GPU</b> (cuota gratuita variable).</li>
+      <li>Ejecuta las celdas en orden (▶). En la celda 4 escribe tu idea o sube el <i>yoha-produccion.json</i> de la pestaña Producción.</li>
+      <li>Al terminar descarga <b>yoha_clips.zip</b> y ábrelo aquí en el Editor: los clips entran en orden con sus subtítulos y la narración.</li>
+    </ol>
+    <h3>Motores incluidos (abiertos, uso comercial permitido)</h3>
+    <table class="tbl">
+      <tr><th>Motor</th><th>Uso</th><th>Licencia</th><th>GPU gratuita</th></tr>
+      <tr><td>Wan 2.1 T2V 1.3B</td><td>Texto→video 480p, 5 s</td><td>Apache-2.0</td><td>T4 (≈8 GB) ✔</td></tr>
+      <tr><td>Wan 2.2 TI2V 5B</td><td>Texto/imagen→video 720p</td><td>Apache-2.0</td><td>T4: experimental y lento (oficialmente pide 24 GB)</td></tr>
+      <tr><td>Kokoro 82M</td><td>Voz en español (narración y diálogos)</td><td>Apache-2.0</td><td>CPU ✔</td></tr>
+      <tr><td>FFmpeg (lanczos)</td><td>Escalado a 1080p/4K</td><td>LGPL</td><td>CPU ✔ · es escalado, no 4K nativo</td></tr>
+    </table>
+    <p class="muted small">Cuotas y disponibilidad de GPU las decide Kaggle/Google y pueden cambiar. No se usa ningún servicio de pago.</p>
+    <h3>Importar resultados</h3>
+    <label class="drop small"><input id="iaZip" type="file" accept=".zip,video/mp4" multiple><span>Elige <b>yoha_clips.zip</b> o los MP4 generados</span></label>
+    <p id="iaStatus" class="status"></p>
+  </div>
+</section>
+
+<!-- ───────── YOUTUBE ───────── -->
+<section id="tab-youtube" class="tab" hidden>
+  <div class="grid2">
+    <div class="card">
+      <h2>Canales de YouTube</h2>
+      <p class="muted small">Conexión OAuth 2.0 directa con Google. Esta app pública <b>no guarda contraseñas ni secretos</b>; el permiso dura ~1 hora y vive solo en esta pestaña.</p>
+      <details><summary>Configurar (una sola vez)</summary>
+        <ol class="steps small">
+          <li>console.cloud.google.com → crea un proyecto (gratis, sin tarjeta).</li>
+          <li>APIs y servicios → Biblioteca → habilita <b>YouTube Data API v3</b>.</li>
+          <li>Pantalla de consentimiento OAuth → Externo → agrega tu correo como usuario de prueba.</li>
+          <li>Credenciales → Crear ID de cliente OAuth → <b>Aplicación web</b> → Orígenes autorizados: <code id="originHint"></code></li>
+          <li>Pega aquí el <b>Client ID</b> (no el secreto):</li>
+        </ol>
+        <div class="row"><input id="ytClientId" placeholder="123456789-xxxx.apps.googleusercontent.com"><button id="ytSaveId" class="secondary">Guardar</button></div>
+      </details>
+      <label class="check"><input id="ytAnalytics" type="checkbox"> Incluir analíticas e ingresos (solo lectura) para Revenue, Radar y Bank</label>
+      <button id="ytConnect" class="primary">+ Conectar canal</button>
+      <div id="ytChannels" class="charlist"></div>
+      <p id="ytStatus" class="status"></p>
+    </div>
+    <div class="card">
+      <h2>Publicar (solo videos aprobados)</h2>
+      <p id="ytProdState" class="muted small">Abre esta pantalla desde «Pendientes de aprobación» → APROBAR Y PUBLICAR.</p>
+      <p id="ytVideoState" class="muted">Primero genera un video en el Editor.</p>
+      <label>Canal<select id="ytChannel"></select></label>
+      <label>Título<input id="ytTitle" maxlength="100"></label>
+      <label>Descripción<textarea id="ytDesc" rows="4" maxlength="5000"></textarea></label>
+      <label>Etiquetas (separadas por coma)<input id="ytTags"></label>
+      <div class="row wrap">
+        <label>Privacidad<select id="ytPrivacy"><option value="private">Privado</option><option value="unlisted">No listado</option><option value="public">Público</option></select></label>
+        <label>Programar (opcional)<input id="ytPublishAt" type="datetime-local"></label>
+      </div>
+      <fieldset><legend>Audiencia (obligatorio)</legend>
+        <label class="check"><input type="radio" name="ytKids" value="no"> No es contenido para niños</label>
+        <label class="check"><input type="radio" name="ytKids" value="yes"> Sí, es contenido para niños</label>
+      </fieldset>
+      <label class="check"><input id="ytSynthetic" type="checkbox" checked> Contiene contenido realista alterado o sintético (IA)</label>
+      <label class="check"><input id="ytConfirm" type="checkbox"> Revisé el video y los datos y <b>autorizo publicarlo</b> en el canal elegido.</label>
+      <button id="ytUpload" class="primary big" disabled>Publicar en YouTube</button>
+      <progress id="ytProgress" max="100" value="0" hidden></progress>
+      <p id="ytUpStatus" class="status"></p>
+      <details><summary>Automatización (desactivada)</summary>
+        <p class="muted small">Programar producciones y publicaciones automáticas necesita un proceso que funcione con tu teléfono apagado (un servidor/worker). Esta app estática no lo tiene, así que la automatización permanece <b>desactivada</b> y no se simula. Sí puedes programar cada publicación con la fecha de arriba: YouTube la hace pública a esa hora.</p>
+      </details>
+      <p class="muted small">Límites vigentes de Google: cuota diaria del proyecto y, en proyectos no verificados, los videos subidos por API pueden quedar restringidos a privado hasta pasar la auditoría de YouTube.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ───────── AYUDA ───────── -->
+<section id="tab-ayuda" class="tab" hidden>
+  <div class="card prose">
+    <h2>Cómo usar YOHA VIDEO</h2>
+    <ol>
+      <li><b>Instálala</b>: en Android/Chrome toca «Instalar app» o ⋮ → Instalar. En iPhone: Compartir → «Agregar a pantalla de inicio».</li>
+      <li><b>Editor</b>: agrega videos y fotos, ordénalos con ☰, toca cada uno para recortar, poner título o subtítulo.</li>
+      <li>Elige <b>formato</b> (horizontal para YouTube, vertical para Reels/TikTok/Shorts), agrega <b>música</b> y <b>narración</b>.</li>
+      <li>Pulsa <b>Generar MP4</b>, revisa la vista previa y descarga.</li>
+      <li>Para escenas creadas con IA usa <b>Producción</b> → <b>Clips IA</b> (notebook gratuito) y luego importa el .zip.</li>
+    </ol>
+    <h3>Estado de funciones</h3>
+    <div id="capTable"></div>
+    <h3>Privacidad y costo</h3>
+    <p>Tus archivos no salen de tu dispositivo, salvo cuando tú decides publicar en YouTube. La app no tiene servidor, anuncios ni cobros. FFmpeg.wasm se descarga una vez (≈31 MB) desde este mismo sitio.</p>
+    <p class="muted small">Versión <span id="ver"></span></p>
+  </div>
+</section>
+</main>
+<div id="toast" class="toast" hidden></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
