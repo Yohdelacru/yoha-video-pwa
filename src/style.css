@@ -73,3 +73,5 @@ details summary{cursor:pointer;font-weight:600;margin:8px 0}
 .bcard small{color:var(--muted);font-size:.7rem;letter-spacing:.06em;font-weight:700}.bcard b{font-size:1.45rem}.bcard span{color:var(--muted);font-size:.8rem}
 .bcard.real{border-color:#4ade8066}.bcard.sim{border-style:dashed;border-color:#ffb86b88}
 .claim{white-space:pre-wrap;background:#0a1124;border:1px solid var(--line);border-radius:12px;padding:12px;font-size:.8rem}
+[hidden]{display:none!important}
+.filebtn input{display:none}
