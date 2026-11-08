@@ -10,7 +10,7 @@ export const ASPECTS = {
   '9:16': { label: 'Vertical 9:16', ratio: [9, 16] },
   '1:1': { label: 'Cuadrado 1:1', ratio: [1, 1] },
 };
-export const RESOLUTIONS = { 360: '360p · rápida', 540: '540p', 720: '720p · recomendada', 1080: '1080p · lenta (Full HD)' };
+export const RESOLUTIONS = { 360: '360p rápida', 540: '540p', 720: '720p ✓', 1080: '1080p (lenta)' };
 
 /** Dimensiones pares para H.264. `short` = lado corto. */
 export function outputSize(aspect, short) {

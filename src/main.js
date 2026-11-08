@@ -373,8 +373,8 @@ async function addBrandClip(file, name) {
   try { const r = await fetch(`./brand/${file}`); if (!r.ok) throw new Error(); await addFiles([new File([await r.blob()], name, { type: 'video/mp4' })]); }
   catch { toast('No se pudo cargar el clip de marca.'); }
 }
-$('addIntro').addEventListener('click', async () => { await addBrandClip('ydc-intro-5s-1080p.mp4', 'Intro YDC.mp4'); const it = state.items.pop(); if (it) { state.items.unshift(it); renderTimeline(); persist(); } });
-$('addOutro').addEventListener('click', () => addBrandClip('ydc-cierre-20s-1080p.mp4', 'Cierre YDC.mp4'));
+$('addIntro').addEventListener('click', async () => { if (state.items[0]?.name === 'Intro YDC.mp4') return toast('La intro YDC ya está al inicio.'); await addBrandClip('ydc-intro-5s-1080p.mp4', 'Intro YDC.mp4'); const it = state.items.pop(); if (it) { state.items.unshift(it); renderTimeline(); persist(); } });
+$('addOutro').addEventListener('click', () => state.items.at(-1)?.name === 'Cierre YDC.mp4' ? toast('El cierre YDC ya está al final.') : addBrandClip('ydc-cierre-20s-1080p.mp4', 'Cierre YDC.mp4'));
 function runEdCmd() {
   const r = applyEditorCommand(state, $('edCmd').value);
   if (r.understood) { setStatus($('edCmdStatus'), '✔ ' + r.applied.join(' · '), 'ok'); $('edCmd').value = ''; applySettingsToUI(); renderTimeline(); persist(); }
