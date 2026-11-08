@@ -180,6 +180,6 @@ export function applyEditorCommand(state, text) {
   if (/mas rapido|acelera/.test(t)) { const it = pick(); (it ? [it] : items.filter((i) => i.kind === 'video')).forEach((i) => (i.speed = 1.5)); applied.push('Más rápido (1.5×)'); }
   const del = /(elimina|quita|borra) (el )?(clip|elemento)\s+(\d+)/.exec(t);
   if (del) { const i = Number(del[4]) - 1; if (items[i]) { items.splice(i, 1); applied.push(`Elemento ${i + 1} eliminado`); } }
-  if (/marca de agua/.test(t)) { state.settings.watermark = !/sin|quita/.test(t); applied.push(state.settings.watermark ? 'Marca de agua IDC activada' : 'Marca de agua desactivada'); }
+  if (/marca de agua/.test(t)) { state.settings.watermark = !/sin|quita/.test(t); applied.push(state.settings.watermark ? 'Marca de agua YDC activada' : 'Marca de agua desactivada'); }
   return { applied, understood: applied.length > 0 };
 }

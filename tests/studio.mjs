@@ -89,15 +89,15 @@ export async function runStudio({ browser, URL_, MEDIA, OUT, record, probe }) {
   const btxt = readFileSync(bp, 'utf8');
   record('Biblia de personajes y producción', /PERSONAJES/.test(btxt) && /Cap\. 2/.test(btxt) && /Episodios: Secretos de la Capital/.test(btxt) ? 'APROBADA' : 'FALLIDA', `${btxt.split('\n').length} líneas`);
 
-  // 7. Editor: intro IDC, orden por texto, marca de agua, lenguaje, exportación
+  // 7. Editor: intro YDC, orden por texto, marca de agua, lenguaje, exportación
   await page.click('[data-tab=editor]');
   await page.evaluate(() => { window.__yoha.state.items.length = 0; });
   await page.setInputFiles('#addFiles', [path.join(MEDIA, 'clip_h.mp4'), path.join(MEDIA, 'photo.jpg')]);
   await page.waitForFunction(() => window.__yoha.state.items.length === 2, null, { timeout: 60000 });
   await page.click('#addIntro');
-  await page.waitForFunction(() => window.__yoha.state.items.length === 3 && window.__yoha.state.items[0].name === 'Intro IDC.mp4', null, { timeout: 60000 }).catch(() => {});
+  await page.waitForFunction(() => window.__yoha.state.items.length === 3 && window.__yoha.state.items[0].name === 'Intro YDC.mp4', null, { timeout: 60000 }).catch(() => {});
   const first = await page.evaluate(() => window.__yoha.state.items[0]?.name);
-  record('Intro animada IDC en el editor', first === 'Intro IDC.mp4' ? 'APROBADA' : 'FALLIDA', first);
+  record('Intro animada YDC en el editor', first === 'Intro YDC.mp4' ? 'APROBADA' : 'FALLIDA', first);
   await page.fill('#edCmd', 'formato vertical'); await page.click('#edCmdBtn');
   await page.fill('#edCmd', 'título: Capítulo 1 — La carta'); await page.click('#edCmdBtn');
   const aspect = await page.inputValue('#aspect');
@@ -114,11 +114,11 @@ export async function runStudio({ browser, URL_, MEDIA, OUT, record, probe }) {
   await page.waitForSelector('#result:not([hidden])', { timeout: 600000 }).catch(() => {});
   let videoOk = false;
   if (await page.isVisible('#result')) {
-    const dlv = page.waitForEvent('download'); await page.click('#dlMp4'); const fv = path.join(OUT, 'yoha-idc-vertical-marca.mp4'); await (await dlv).saveAs(fv);
+    const dlv = page.waitForEvent('download'); await page.click('#dlMp4'); const fv = path.join(OUT, 'yoha-ydc-vertical-marca.mp4'); await (await dlv).saveAs(fv);
     const p = probe(fv); const v = p.streams.find((s) => s.codec_type === 'video');
     videoOk = v.width === 360 && v.height === 640 && Math.abs(Number(p.format.duration) - (5 + 6 + 4)) < 0.5;
-    record('Exportación con intro + marca de agua IDC (9:16)', videoOk ? 'APROBADA' : 'FALLIDA', `${v.width}x${v.height}, ${Number(p.format.duration).toFixed(2)} s`);
-  } else record('Exportación con intro + marca de agua IDC (9:16)', 'FALLIDA', await page.textContent('#exportStatus'));
+    record('Exportación con intro + marca de agua YDC (9:16)', videoOk ? 'APROBADA' : 'FALLIDA', `${v.width}x${v.height}, ${Number(p.format.duration).toFixed(2)} s`);
+  } else record('Exportación con intro + marca de agua YDC (9:16)', 'FALLIDA', await page.textContent('#exportStatus'));
 
   // 8. Aprobación obligatoria: enviar a revisión → modificar → aprobar → contexto de publicación
   dialogAnswer = '1';

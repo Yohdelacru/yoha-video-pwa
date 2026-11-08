@@ -1,4 +1,4 @@
-# Yoha Video · IDC Entertainment — Estudio PWA gratuito (v2.0)
+# Yoha Video · YDC Entertainment Virales — Estudio PWA gratuito (v2.0)
 
 Aplicación web instalable (PWA) que **edita y exporta video en el propio dispositivo** con FFmpeg.wasm. No tiene servidor, no guarda secretos y no usa servicios de pago. Es el frontend público y seguro de YOHA VIDEO; el estudio completo (Next.js + PostgreSQL + workers) sigue en el repositorio privado.
 
@@ -25,8 +25,8 @@ Aplicación web instalable (PWA) que **edita y exporta video en el propio dispos
 | Generación de video con IA | ⚙️ notebook de Kaggle/Colab (GPU), no en el navegador |
 | Automatización de publicaciones | ⛔ desactivada: necesita un worker que no existe en una PWA estática |
 
-## Novedades v2.0 (IDC Entertainment)
-Panel ejecutivo de 14 apartados: Crear video (Director IA), Mis producciones, Mis series, Editor IA, Personajes, Radar Viral IA, Protección de mis videos, Marketing Global, Yoha Revenue IA, Yoha Bank, Calendario editorial, Pendientes de aprobación, Videos publicados y Configuración. Identidad IDC (logo, portada, marca de agua, intro y cierre) en `public/brand/` (se regenera con `npm run brand`). Notebook v2: `public/notebook/YOHA_VIDEO_Kaggle_Colab_Gratis.ipynb`. El backend y los informes internos permanecen en el repositorio privado.
+## Novedades v2.0 (YDC Entertainment Virales)
+Panel ejecutivo de 14 apartados: Crear video (Director IA), Mis producciones, Mis series, Editor IA, Personajes, Radar Viral IA, Protección de mis videos, Marketing Global, Yoha Revenue IA, Yoha Bank, Calendario editorial, Pendientes de aprobación, Videos publicados y Configuración. Identidad YDC (logo, portada, marca de agua, intro y cierre) en `public/brand/` (se regenera con `npm run brand`). Notebook v2: `public/notebook/YOHA_VIDEO_Kaggle_Colab_Gratis.ipynb`. Informe completo: `docs/INFORME-YOHA-VIDEO-YDC-2026-11-06.md` del repositorio privado.
 
 ## Instalar en iPhone
 1. Abre la dirección de la app en **Safari** (no en Chrome).
@@ -47,7 +47,7 @@ MEDIA=test-media node tests/webkit.mjs # motor de Safari (iPhone), en GitHub Act
 
 ## Publicar en GitHub Pages
 1. Repositorio **público** `yoha-video-pwa` con el contenido de esta carpeta en la raíz.
-2. Los flujos ya están en `.github/workflows/` (publicación, verificación de URL y pruebas con Chromium y WebKit).
+2. Copiar `deploy/pages.yml` y `deploy/test.yml` a `.github/workflows/`.
 3. *Settings → Pages → Source: GitHub Actions*.
 4. Cada `push` a `main` compila, publica y verifica la URL.
 

@@ -1,4 +1,4 @@
-// YOHA VIDEO · Panel ejecutivo de IDC Entertainment
+// YOHA VIDEO · Panel ejecutivo de YDC Entertainment Virales
 // Secciones: Panel, Crear video (Director IA), Producción (obra), Mis producciones, Mis series, Radar Viral,
 // Protección, Marketing, Revenue, Yoha Bank, Calendario, Pendientes de aprobación, Publicados, Configuración.
 // Todo se guarda automáticamente en el dispositivo (IndexedDB). Nada se publica ni se envía sin aprobación.
@@ -59,7 +59,7 @@ export async function initStudio(hooks) {
       ['bank', '🏦', 'Yoha Bank', 'Informativo · USD y RD$'], ['calendario', '🗓', 'Calendario editorial', 'Plan de publicaciones'], ['aprobaciones', '✅', 'Pendientes de aprobación', pend ? `<b>${pend} esperando tu revisión</b>` : 'Nada pendiente'],
       ['publicados', '▶️', 'Videos publicados', `${pub} publicados`], ['config', '⚙️', 'Configuración', 'Canales, avisos, marca, respaldo'],
     ];
-    $('tab-panel').innerHTML = `<div class="hero"><img src="./brand/idc-logo.png" alt="" width="72" height="72" onerror="this.remove()"><div><h1>IDC Entertainment</h1><p class="muted">Yoha Video · productora audiovisual inteligente · costo cero</p></div></div>
+    $('tab-panel').innerHTML = `<div class="hero"><img src="./brand/ydc-logo.png" alt="" width="72" height="72" onerror="this.remove()"><div><h1>YDC Entertainment Virales</h1><p class="muted">Yoha Video · productora audiovisual inteligente · costo cero</p></div></div>
       <div class="tiles">${tiles.map(([t, i, n, d]) => `<button class="tile" data-go="${t}"><span class="ti-ico">${i}</span><b>${n}</b><small>${d}</small></button>`).join('')}</div>
       <p class="muted small">Flujo obligatorio: CREAR → REVISAR → APROBAR → PUBLICAR. Ningún video, campaña o reclamación sale sin tu aprobación.</p>`;
     $('tab-panel').querySelectorAll('[data-go]').forEach((b) => (b.onclick = () => hooks.showTab(b.dataset.go)));
@@ -169,7 +169,7 @@ export async function initStudio(hooks) {
       <h3>Paquete para el notebook</h3>
       <label class="check"><input id="obPhotos" type="checkbox"> Incluir fotos de referencia autorizadas</label>
       <div class="row wrap"><button id="obPkgAll" class="primary">⬇ Producción completa</button><button id="obPkgDirty" class="secondary">⬇ Solo escenas modificadas</button><button id="obMarkClean" class="ghost small">Marcar todo como generado</button></div>
-      <p class="muted small">El notebook devuelve <i>yoha_clips.zip</i> (clips, voces, lip-sync opcional, subtítulos ES/EN). Ábrelo en el Editor, agrega intro/cierre IDC y música, exporta y pulsa «Enviar a revisión».</p>
+      <p class="muted small">El notebook devuelve <i>yoha_clips.zip</i> (clips, voces, lip-sync opcional, subtítulos ES/EN). Ábrelo en el Editor, agrega intro/cierre YDC y música, exporta y pulsa «Enviar a revisión».</p>
       <div class="row wrap"><button id="obToEditor" class="secondary">Ir al Editor</button><button id="obToReview" class="secondary">Enviar el último video exportado a revisión</button></div>
     </div>
 
@@ -306,7 +306,7 @@ export async function initStudio(hooks) {
         const s = await get();
         const eps = (await productions.all()).filter((p) => p.seriesId === sid).sort((a, b) => (a.episode || 0) - (b.episode || 0));
         const cast = S.chars.filter((c) => (s.cast || []).includes(c.id));
-        const txt = `BIBLIA DE PRODUCCIÓN — ${s.title}\nIDC Entertainment · Yoha Video\n\nPremisa: ${s.logline}\nMundo: ${s.bible?.world || '—'}\nTono y reglas: ${s.bible?.tone || '—'}\n\nPERSONAJES\n${cast.map((c) => `• ${c.name} (${c.role || '—'})\n  Apariencia: ${c.appearance}\n  Vestuario: ${c.wardrobe || '—'}\n  Personalidad: ${c.personality || '—'}\n  Historia: ${c.history || '—'}\n  Relaciones: ${(c.relations || []).map((r) => `${r.name || cast.find((x) => x.id === r.with)?.name || r.with} — ${r.type}`).join('; ') || '—'}\n  Voz: ${c.voice}${c.voiceEn ? ` / EN ${c.voiceEn}` : ''} · Semilla ${c.seed}\n  Episodios: ${(c.episodes || []).join(', ') || '—'}`).join('\n')}\n\nCAPÍTULOS\n${eps.map((e) => `Cap. ${e.episode} — ${e.title} [${STATUS[e.status]?.[0] || e.status}]\n  ${e.synopsis}\n  Resumen: ${e.recap || '—'}`).join('\n')}\n`;
+        const txt = `BIBLIA DE PRODUCCIÓN — ${s.title}\nYDC Entertainment Virales · Yoha Video\n\nPremisa: ${s.logline}\nMundo: ${s.bible?.world || '—'}\nTono y reglas: ${s.bible?.tone || '—'}\n\nPERSONAJES\n${cast.map((c) => `• ${c.name} (${c.role || '—'})\n  Apariencia: ${c.appearance}\n  Vestuario: ${c.wardrobe || '—'}\n  Personalidad: ${c.personality || '—'}\n  Historia: ${c.history || '—'}\n  Relaciones: ${(c.relations || []).map((r) => `${r.name || cast.find((x) => x.id === r.with)?.name || r.with} — ${r.type}`).join('; ') || '—'}\n  Voz: ${c.voice}${c.voiceEn ? ` / EN ${c.voiceEn}` : ''} · Semilla ${c.seed}\n  Episodios: ${(c.episodes || []).join(', ') || '—'}`).join('\n')}\n\nCAPÍTULOS\n${eps.map((e) => `Cap. ${e.episode} — ${e.title} [${STATUS[e.status]?.[0] || e.status}]\n  ${e.synopsis}\n  Resumen: ${e.recap || '—'}`).join('\n')}\n`;
         download(`biblia-${s.title.replace(/\W+/g, '-')}.txt`, txt, 'text/plain;charset=utf-8');
       };
     });
@@ -392,10 +392,10 @@ export async function initStudio(hooks) {
       <button id="mkGo" class="primary">Preparar campaña</button><div id="mkOut"></div></div>
       <div class="grid2"><div class="card"><h2>🎞 Tráiler / Short promocional</h2><p class="muted small">Toma los mejores segundos de la línea de tiempo del Editor (sin regenerar nada) y crea un video vertical con «MUY PRONTO».</p>
         <div class="row wrap"><label>Duración<select id="mkTrSec"><option value="15">15 s</option><option value="20" selected>20 s</option><option value="30">30 s</option></select></label><label>Formato<select id="mkTrAsp"><option value="9:16">Vertical 9:16</option><option value="16:9">Horizontal 16:9</option></select></label></div>
-        <button id="mkTrailer" class="secondary">Crear tráiler</button><progress id="mkTrProg" max="100" value="0" hidden></progress><p id="mkTrStatus" class="status"></p><video id="mkTrVideo" controls playsinline hidden style="width:100%;border-radius:12px"></video><a id="mkTrDl" class="btn secondary" hidden download="idc-trailer.mp4">⬇ Descargar tráiler</a></div>
-      <div class="card"><h2>🖼 Miniatura 1280×720</h2><p class="muted small">Usa un fotograma del último video exportado, tu título y el emblema IDC.</p>
+        <button id="mkTrailer" class="secondary">Crear tráiler</button><progress id="mkTrProg" max="100" value="0" hidden></progress><p id="mkTrStatus" class="status"></p><video id="mkTrVideo" controls playsinline hidden style="width:100%;border-radius:12px"></video><a id="mkTrDl" class="btn secondary" hidden download="ydc-trailer.mp4">⬇ Descargar tráiler</a></div>
+      <div class="card"><h2>🖼 Miniatura 1280×720</h2><p class="muted small">Usa un fotograma del último video exportado, tu título y el emblema YDC.</p>
         <label>Texto grande<input id="mkThTitle" maxlength="40" placeholder="¡ME TRAICIONÓ!"></label><label>Etiqueta<input id="mkThTag" maxlength="20" value="CAPÍTULO 1"></label><label>Segundo del video<input id="mkThSec" type="number" min="0" step="0.5" value="2"></label>
-        <button id="mkThumb" class="secondary">Crear miniatura</button><canvas id="mkCanvas" width="1280" height="720" style="width:100%;border-radius:12px;margin-top:8px" hidden></canvas><a id="mkThDl" class="btn secondary" hidden download="idc-miniatura.jpg">⬇ Descargar miniatura</a><p id="mkThStatus" class="status"></p></div></div>
+        <button id="mkThumb" class="secondary">Crear miniatura</button><canvas id="mkCanvas" width="1280" height="720" style="width:100%;border-radius:12px;margin-top:8px" hidden></canvas><a id="mkThDl" class="btn secondary" hidden download="ydc-miniatura.jpg">⬇ Descargar miniatura</a><p id="mkThStatus" class="status"></p></div></div>
       <div class="card"><h2>Herramientas gratuitas</h2><table class="tbl"><tr><th>Herramienta</th><th>Para qué</th><th>Costo</th></tr>${mk.FREE_TOOLS.map((t) => `<tr><td>${esc(t.name)}</td><td>${esc(t.use)}</td><td>${esc(t.cost)}</td></tr>`).join('')}</table><p class="muted small">Condiciones y límites cambian: revísalos antes de usarlos. Nunca uses seguidores o vistas compradas.</p></div>`;
     $('mkGo').onclick = async () => {
       const p = await productions.get($('mkProd').value); if (!p) return;
@@ -443,7 +443,7 @@ export async function initStudio(hooks) {
     lines.slice(0, 3).forEach((l, i) => { ctx.fillStyle = i === lines.length - 1 ? '#E8B54A' : '#fff'; ctx.fillText(l, 60, y); y += 104; });
     ctx.shadowBlur = 0;
     if (label) { ctx.font = '800 36px system-ui, sans-serif'; const w = ctx.measureText(label).width + 44; ctx.fillStyle = '#E8B54A'; ctx.fillRect(60, 620, w, 60); ctx.fillStyle = '#070B18'; ctx.fillText(label, 82, 632); }
-    const logo = new Image(); logo.src = './brand/idc-logo.png'; await logo.decode().catch(() => {}); if (logo.naturalWidth) ctx.drawImage(logo, 1120, 30, 130, 130);
+    const logo = new Image(); logo.src = './brand/ydc-logo.png'; await logo.decode().catch(() => {}); if (logo.naturalWidth) ctx.drawImage(logo, 1120, 30, 130, 130);
     return new Promise((r) => c.toBlob(r, 'image/jpeg', 0.9));
   }
 
@@ -621,7 +621,7 @@ export async function initStudio(hooks) {
   async function renderConfig() {
     const est = await storageEstimate();
     const log = (await auditCol.all()).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 40);
-    const brand = [['idc-logo.png', 'Logotipo (transparente)'], ['idc-perfil-800.png', 'Foto de perfil 800×800'], ['idc-portada-2560x1440.png', 'Portada 2560×1440'], ['idc-portada-zona-segura.png', 'Guía de zona segura'], ['idc-marca-agua-150.png', 'Marca de agua 150×150'], ['idc-plantilla-miniatura.png', 'Plantilla de miniatura'], ['idc-intro-5s-1080p.mp4', 'Intro animada 5 s'], ['idc-cierre-20s-1080p.mp4', 'Cierre / pantalla final 20 s']];
+    const brand = [['ydc-logo.png', 'Logotipo (transparente)'], ['ydc-perfil-800.png', 'Foto de perfil 800×800'], ['ydc-portada-2560x1440.png', 'Portada 2560×1440'], ['ydc-portada-zona-segura.png', 'Guía de zona segura'], ['ydc-marca-agua-150.png', 'Marca de agua 150×150'], ['ydc-plantilla-miniatura.png', 'Plantilla de miniatura'], ['ydc-intro-5s-1080p.mp4', 'Intro animada 5 s'], ['ydc-cierre-20s-1080p.mp4', 'Cierre / pantalla final 20 s']];
     $('tab-config').innerHTML = `<div class="grid2"><div class="card"><h2>▶️ Canales de YouTube</h2><p class="muted small">OAuth oficial de Google: Yoha nunca pide ni guarda tu contraseña. Cada canal se conecta por separado y sus datos no se mezclan.</p><button id="cfYt" class="primary">Configurar y conectar canales</button></div>
       <div class="card"><h2>🔔 Notificaciones al iPhone</h2>
         <p class="small"><b>1. Aviso de la app</b> (al terminar una exportación en este dispositivo). En iPhone: instala Yoha Video en la pantalla de inicio (iOS 16.4+), ábrela desde allí y activa.</p><button id="cfLocal" class="secondary">Activar avisos de la app</button>
@@ -629,7 +629,7 @@ export async function initStudio(hooks) {
         <div class="row"><input id="cfTopic" value="${esc(nt.getTopic())}" placeholder="sin tema"><button id="cfNew" class="secondary small">Generar</button></div>
         <div class="row wrap"><button id="cfCopy" class="ghost small">Copiar tema</button><button id="cfTest" class="secondary small">Enviar prueba</button></div>
         <p class="muted small">El tema funciona como contraseña: no lo compartas. Solo se envían: producción lista, error crítico y producción detenida. Nunca avisos por copias.</p><p id="cfStatus" class="status"></p></div></div>
-      <div class="grid2"><div class="card"><h2>🎨 Identidad IDC Entertainment</h2>${brand.map(([f, l]) => `<div class="row small"><span style="flex:1">${l}</span><a class="btn ghost small" href="./brand/${f}" download>⬇</a></div>`).join('')}
+      <div class="grid2"><div class="card"><h2>🎨 Identidad YDC Entertainment Virales</h2>${brand.map(([f, l]) => `<div class="row small"><span style="flex:1">${l}</span><a class="btn ghost small" href="./brand/${f}" download>⬇</a></div>`).join('')}
         <p class="muted small">La foto de perfil de YouTube no puede ser animada: la animación se usa como intro de los videos.</p></div>
       <div class="card"><h2>💾 Respaldo</h2><p class="muted small">Todo se guarda automáticamente en este dispositivo${est ? ` (${(est.used / 1048576).toFixed(0)} MB usados de ~${(est.quota / 1073741824).toFixed(1)} GB)` : ''}. Descarga un respaldo para moverlo a otro equipo.</p>
         <div class="row wrap"><button id="cfBackup" class="secondary">⬇ Respaldo (sin videos)</button><label class="filebtn secondary">Restaurar respaldo<input id="cfRestore" type="file" accept="application/json" hidden></label></div>

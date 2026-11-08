@@ -56,7 +56,7 @@ code{background:#0a1124;border:1px solid var(--line);border-radius:6px;padding:1
 details summary{cursor:pointer;font-weight:600;margin:8px 0}
 .filebtn{display:inline-flex;margin:0;cursor:pointer}
 @media(max-width:520px){.ti{grid-template-columns:auto 56px 1fr}.ti .acts{grid-column:1/-1;justify-content:flex-end}.ti .thumb{width:56px;height:40px}}
-/* ── Panel ejecutivo IDC ── */
+/* ── Panel ejecutivo YDC ── */
 .hero{display:flex;gap:14px;align-items:center;margin:4px 0 14px}.hero h1{margin:0;font-size:1.5rem;letter-spacing:.04em;background:linear-gradient(135deg,#FFE7A3,#E8B54A 45%,#A8741E);-webkit-background-clip:text;color:transparent}.hero p{margin:2px 0 0}
 .tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:12px}
 .tile{flex-direction:column;align-items:flex-start;text-align:left;background:var(--card);border:1px solid var(--line);color:var(--fg);padding:14px;min-height:110px;gap:4px}

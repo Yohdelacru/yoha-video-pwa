@@ -144,7 +144,7 @@ async function thumbSimilarity(a, b) {
   return 1 - x.reduce((s, v, i) => s + (v !== y[i]), 0) / 64;
 }
 /** Borrador de reclamación: NO se envía. YouTube exige que la titular la presente en su formulario oficial. */
-export function claimDraft(match, owner = 'IDC Entertainment') {
+export function claimDraft(match, owner = 'YDC Entertainment Virales') {
   return `BORRADOR (no enviado) — Solicitud de retiro por derechos de autor
 Titular: ${owner}
 Obra original: «${match.originalTitle}» — https://www.youtube.com/watch?v=${match.originalId}

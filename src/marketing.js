@@ -14,7 +14,7 @@ export const FREE_TOOLS = [
 const tagify = (s) => '#' + String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9ñÑ ]/g, '').split(' ').filter(Boolean).map((w) => w[0].toUpperCase() + w.slice(1)).join('');
 
 /** Textos por plataforma a partir de la producción (original, sin promesas de viralidad). */
-export function campaignCopy(prod, { brand = 'IDC Entertainment', episode = null } = {}) {
+export function campaignCopy(prod, { brand = 'YDC Entertainment Virales', episode = null } = {}) {
   const t = prod.title || 'Nuevo estreno';
   const ep = episode ? ` | Capítulo ${episode}` : '';
   const hook = prod.scenes?.find((s) => (s.dialogue || []).length)?.dialogue[0]?.text || prod.synopsis?.split('.')[0] || '';
@@ -43,7 +43,7 @@ export function proposeCalendar({ start = new Date(), weeks = 4, perWeek = 3, ho
 }
 
 /** Tráiler o Short promocional: toma el arranque de cada clip (sin regenerar nada) y cierra con "Muy pronto". */
-export function trailerItems(items, { seconds = 20, per = 2.2, endTitle = 'MUY PRONTO · IDC Entertainment' } = {}) {
+export function trailerItems(items, { seconds = 20, per = 2.2, endTitle = 'MUY PRONTO · YDC Entertainment Virales' } = {}) {
   const vids = items.filter((i) => i.kind === 'video' || i.kind === 'image');
   if (!vids.length) return [];
   const n = Math.max(1, Math.min(vids.length, Math.floor(seconds / per + 1e-6)));

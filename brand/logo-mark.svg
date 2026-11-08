@@ -14,11 +14,13 @@
     <path d="M256 70 L380 182"/><path d="M417 163 L382 325"/><path d="M417 349 L256 442"/>
     <path d="M256 442 L132 330"/><path d="M95 349 L130 187"/><path d="M95 163 L256 70"/>
   </g>
-  <!-- monograma IDC -->
-  <g transform="translate(-14 0)">
-    <rect x="104" y="190" width="32" height="132" rx="6" fill="url(#gold)"/>
-    <path d="M158 190h52c44 0 74 28 74 66s-30 66-74 66h-52zM192 222v68h16c24 0 40-13 40-34s-16-34-40-34z" fill="url(#gold)"/>
-    <path d="M418.7 209.3 A66 66 0 1 0 418.7 302.7" fill="none" stroke="url(#gold)" stroke-width="32"/>
+  <!-- monograma YDC -->
+  <g transform="translate(-8 0)">
+    <path d="M76 190h31l9 40 9-40h31l-24 72v60h-32v-60z" fill="url(#gold)"/>
+    <g transform="translate(16 0)">
+      <path d="M158 190h52c44 0 74 28 74 66s-30 66-74 66h-52zM192 222v68h16c24 0 40-13 40-34s-16-34-40-34z" fill="url(#gold)"/>
+      <path d="M418.7 209.3 A66 66 0 1 0 418.7 302.7" fill="none" stroke="url(#gold)" stroke-width="32"/>
+    </g>
   </g>
   <!-- estrella de estreno -->
   <path d="M256 110l7 15 16 2-12 11 3 16-14-8-14 8 3-16-12-11 16-2z" fill="#FFE7A3"/>

@@ -333,7 +333,7 @@ $('exportBtn').addEventListener('click', async () => {
     const bad = checkTimeline(state.items);
     if (isBlocked(bad, s.allowStrong)) throw new Error(`Lenguaje no permitido (${bad.map((b) => `${b.where}: «${b.word}»`).join('; ')}). Corrígelo; el lenguaje limpio está activo por defecto.`);
     let watermark = null;
-    if (s.watermark) { const img = new Image(); img.src = './brand/idc-marca-agua-150.png'; await img.decode().then(() => (watermark = img)).catch(() => toast('No se pudo cargar la marca de agua.')); }
+    if (s.watermark) { const img = new Image(); img.src = './brand/ydc-marca-agua-150.png'; await img.decode().then(() => (watermark = img)).catch(() => toast('No se pudo cargar la marca de agua.')); }
     const res = await exportVideo({ watermark,
       items, aspect: s.aspect, short: s.short, fill: s.fill, quality: s.quality, clipVol: s.clipVol, burnSubtitles: s.burnSubs,
       music: await getFile(state.musicId), musicVol: s.musicVol,
@@ -373,8 +373,8 @@ async function addBrandClip(file, name) {
   try { const r = await fetch(`./brand/${file}`); if (!r.ok) throw new Error(); await addFiles([new File([await r.blob()], name, { type: 'video/mp4' })]); }
   catch { toast('No se pudo cargar el clip de marca.'); }
 }
-$('addIntro').addEventListener('click', async () => { await addBrandClip('idc-intro-5s-1080p.mp4', 'Intro IDC.mp4'); const it = state.items.pop(); if (it) { state.items.unshift(it); renderTimeline(); persist(); } });
-$('addOutro').addEventListener('click', () => addBrandClip('idc-cierre-20s-1080p.mp4', 'Cierre IDC.mp4'));
+$('addIntro').addEventListener('click', async () => { await addBrandClip('ydc-intro-5s-1080p.mp4', 'Intro YDC.mp4'); const it = state.items.pop(); if (it) { state.items.unshift(it); renderTimeline(); persist(); } });
+$('addOutro').addEventListener('click', () => addBrandClip('ydc-cierre-20s-1080p.mp4', 'Cierre YDC.mp4'));
 function runEdCmd() {
   const r = applyEditorCommand(state, $('edCmd').value);
   if (r.understood) { setStatus($('edCmdStatus'), '✔ ' + r.applied.join(' · '), 'ok'); $('edCmd').value = ''; applySettingsToUI(); renderTimeline(); persist(); }
@@ -593,7 +593,7 @@ $('ytUpload').addEventListener('click', async () => {
 // ────────────────────────── Ayuda / estado ──────────────────────────
 const CAPS = [
   ['Editor: unir, reordenar, recortar, velocidad, títulos, subtítulos, música, narración, formatos, MP4', 'ok', 'Probado en navegador (FFmpeg.wasm)'],
-  ['Intro, cierre y marca de agua IDC', 'ok', 'Diseño original incluido'],
+  ['Intro, cierre y marca de agua YDC', 'ok', 'Diseño original incluido'],
   ['Director IA: una instrucción → producción estructurada', 'ok', 'Reglas en el navegador; guion completo con Qwen2.5-7B en el notebook'],
   ['Editor por conversación (producción y editor)', 'ok', 'Reglas en español; marca solo escenas modificadas'],
   ['Personajes con memoria, biblia de series, capítulos y continuidad', 'ok', 'Guardado en el dispositivo'],

@@ -162,7 +162,7 @@ export function buildProduction(instruction, { library = [], seriesId = null, ep
 
 function suggestTitle(p) {
   const base = { novela: 'Corazones en Juego', serie: 'Secretos de Familia', pelicula: 'La Última Promesa', romance: 'Bajo el Mismo Cielo', suspenso: 'Lo Que Nadie Vio', comedia: 'Qué Lío en el Barrio', documental: 'Historias que Inspiran', comercial: 'Tu Mejor Decisión', empresarial: 'Construimos Futuro', musical: 'Ritmo del Alma', educativo: 'Aprende en 5 Minutos', infantil: 'La Aventura de Pipo', motivacional: 'Nunca Te Rindas', short: '¿Qué Harías Tú?', drama: 'Entre la Verdad y el Silencio' };
-  return (p.dominican && ['novela', 'serie'].includes(p.format) ? 'Amor y Traición en la Capital' : base[p.format]) || 'Mi Producción IDC';
+  return (p.dominican && ['novela', 'serie'].includes(p.format) ? 'Amor y Traición en la Capital' : base[p.format]) || 'Mi Producción YDC';
 }
 
 // ───────────── Estimaciones honestas ─────────────
@@ -216,7 +216,7 @@ export function autoDirect(scene) {
 export function writerBrief(prod, chars) {
   const cast = chars.filter((c) => prod.characters.includes(c.id)).map((c) => `- id "${c.id}": ${c.name}, ${c.role}. Personalidad: ${c.personality || '—'}. Historia: ${c.history || '—'}. Apariencia (inglés): ${c.appearance}. Vestuario: ${c.wardrobe || '—'}.`).join('\n');
   const scenes = prod.scenes.map((s) => `${s.n}. [${s.id}] ${s.title} — lugar: ${s.location}, ${s.time}; personajes: ${s.characters.map((id) => chars.find((c) => c.id === id)?.name || id).join(', ')}; ${s.seconds} s`).join('\n');
-  return `Eres guionista profesional de ${prod.formatLabel} para el canal IDC Entertainment.
+  return `Eres guionista profesional de ${prod.formatLabel} para el canal YDC Entertainment Virales.
 Instrucción original: "${prod.instruction}"
 Título de trabajo: ${prod.title}
 Duración total: ${Math.round(prod.durationSec / 60)} minutos. Idioma: español${prod.languages.includes('en') ? ' (incluye además la traducción al inglés de cada diálogo en "dialogueEn")' : ''}.
@@ -274,7 +274,7 @@ export function productionPackage(prod, chars, { includePhotos = false, onlyDirt
   const cast = chars.filter((c) => prod.characters.includes(c.id));
   const styleText = STYLE_TEXT[prod.style] || prod.style;
   return {
-    format: 'yoha-production', version: 2, app: 'Yoha Video', brand: 'IDC Entertainment', createdAt: new Date().toISOString(),
+    format: 'yoha-production', version: 2, app: 'Yoha Video', brand: 'YDC Entertainment Virales', createdAt: new Date().toISOString(),
     id: prod.id, title: prod.title, synopsis: prod.synopsis, instruction: prod.instruction, brief: writerBrief(prod, chars), genre: prod.formatLabel, style: prod.style, styleText,
     aspect: prod.aspect, resolution: prod.resolution, languages: prod.languages, allowStrongLanguage: Boolean(prod.allowStrongLanguage), musicMood: prod.music?.mood,
     characters: cast.map((c) => ({ id: c.id, name: c.name, role: c.role, appearance: c.appearance, wardrobe: c.wardrobe, voice: c.voice, voiceEn: c.voiceEn || 'af_heart', seed: c.seed,
