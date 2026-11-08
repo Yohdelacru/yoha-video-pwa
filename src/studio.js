@@ -10,10 +10,12 @@ import * as yt from './youtube.js';
 import * as ins from './insights.js';
 import * as mk from './marketing.js';
 import * as nt from './notify.js';
+import * as pr from './productora.js';
 import { exportVideo } from './engine.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const cloudText = (c) => [c.mensaje && c.mensaje.startsWith(pr.STATES[c.estado] || '¬') ? '' : pr.STATES[c.estado] || c.estado, c.mensaje, c.planos_total ? `${c.planos_hechos || 0}/${c.planos_total} planos` : '', c.actualizado ? `actualizado ${dt(c.actualizado)}` : ''].filter(Boolean).join(' · ');
 const dt = (s) => (s ? new Date(s).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 const STATUS = { borrador: ['Borrador', 'warn'], en_revision: ['En revisión', 'warn'], cambios_solicitados: ['Cambios solicitados', 'warn'], aprobado: ['Aprobado', 'ok'], rechazado: ['Rechazado', 'no'], publicado: ['Publicado', 'ok'] };
 const tag = (st) => { const [l, k] = STATUS[st] || [st, 'warn']; return `<span class="tag ${k}">${l}</span>`; };
@@ -120,6 +122,7 @@ export async function initStudio(hooks) {
     const scripted = p.scenes.filter((s) => s.status === 'guion_listo' || (s.dialogue || []).length || s.narration).length;
     const done = { Idea: true, Guion: scripted === p.scenes.length, Personajes: cast.length > 0, Escenarios: true, 'Diálogos': p.scenes.some((s) => (s.dialogue || []).length), Escenas: true, 'Dirección': true, 'Actuación': p.scenes.some((s) => Object.keys(s.acting || {}).length), Música: Boolean(p.music?.mood), Exportación: Boolean(p.videoHash), 'Visual (IA)': Boolean(p.clipsImported), Voces: Boolean(p.voicesImported), Montaje: Boolean(p.videoHash), Subtítulos: Boolean(p.videoHash), Efectos: p.scenes.some((s) => s.sfx) };
     const charName = (cid) => cast.find((c) => c.id === cid)?.name || '—';
+    const gpu = pr.gpuEstimate(productionPackage(p, S.chars, {}));
     $('tab-obra').innerHTML = `
     <div class="card">
       <div class="row wrap" style="justify-content:space-between"><h2 style="margin:0">${esc(p.title)}</h2><div>${tag(p.status)} ${p.seriesId ? `<span class="pill">Capítulo ${p.episode}</span>` : ''}</div></div>
@@ -161,6 +164,15 @@ export async function initStudio(hooks) {
     </div>
 
     <div id="obScenes"></div>
+
+    <div class="card" id="obCloud">
+      <h2>🎬 Producir la novela con IA (gratis)</h2>
+      <p class="small">Envía esta producción a <b>Kaggle</b> (GPU gratuita) por medio de tu repositorio privado. Allí la IA escribe los diálogos que falten, genera cada escena en video, crea las voces y los subtítulos; después se monta el capítulo con la intro, la marca de agua y el cierre YDC. Al terminar queda en <b>Pendientes de aprobación</b>: nada se publica sin ti.</p>
+      <p class="muted small">Estimación (no medida): ${gpu.planos} planos · ~${gpu.horas} h de GPU · ${gpu.sesiones} sesión(es) de Kaggle · ${gpu.semanas} semana(s) de cuota gratuita (~30 h por semana). Los rostros y movimientos generados con modelos gratuitos son aproximados.</p>
+      <div class="row wrap"><label>Calidad<select id="obCq"><option value="borrador">Borrador (más rápida)</option><option value="normal" selected>Normal</option><option value="alta">Alta (más lenta)</option></select></label></div>
+      <div class="row wrap"><button id="obCloudGo" class="primary">🎬 ${p.cloud ? 'Producir de nuevo (solo cambios)' : 'Producir novela con IA'}</button><button id="obCloudChk" class="secondary" ${p.cloud ? '' : 'hidden'}>↻ Actualizar estado</button><button id="obCloudGet" class="primary" ${p.cloud?.estado === 'lista' ? '' : 'hidden'}>⬇ Traer el video y enviarlo a revisión</button></div>
+      <p id="obCloudStatus" class="status ${p.cloud?.estado === 'error' ? 'err' : p.cloud?.estado === 'lista' ? 'ok' : ''}">${p.cloud ? esc(cloudText(p.cloud)) : ''}</p>
+    </div>
 
     <div class="card">
       <h2>🎵 Música, voces y montaje</h2>
@@ -217,6 +229,47 @@ export async function initStudio(hooks) {
     };
     $('obPkgAll').onclick = () => download(`yoha-produccion-${p.id.slice(0, 6)}.json`, JSON.stringify(productionPackage(p, S.chars, { includePhotos: $('obPhotos').checked }), null, 2), 'application/json');
     $('obPkgDirty').onclick = () => download(`yoha-cambios-${p.id.slice(0, 6)}.json`, JSON.stringify(productionPackage(p, S.chars, { includePhotos: $('obPhotos').checked, onlyDirty: true }), null, 2), 'application/json');
+    $('obCloudGo').onclick = async () => {
+      const cfg = await pr.getConfig();
+      if (!pr.isConfigured(cfg)) { status('obCloudStatus', 'Primero conecta la Productora en Configuración → «Productora IA (Kaggle)».', 'err'); return; }
+      if (blocked) { status('obCloudStatus', 'Hay lenguaje no permitido. Corrígelo o autorízalo solo para esta producción.', 'err'); return; }
+      if (!confirm(`¿Producir «${p.title}» con IA en Kaggle?\n\nEstimación: ~${gpu.horas} h de GPU gratuita. Costo: US$0.\nTe avisaremos cuando esté lista para revisar. Nada se publica sin tu aprobación.`)) return;
+      try {
+        status('obCloudStatus', 'Enviando a la Productora…');
+        const pkg = productionPackage(p, S.chars, { includePhotos: $('obPhotos').checked });
+        await pr.sendProduction(cfg, pkg, { ntfy: nt.getTopic() || '', calidad: $('obCq').value, intento: (p.cloud?.intento || 0) + 1 });
+        p.cloud = { estado: 'en_cola', mensaje: 'Enviada. La Productora la lanza en Kaggle en 1–3 minutos.', enviado: new Date().toISOString(), intento: (p.cloud?.intento || 0) + 1 };
+        Object.assign(p, { stage: 'produccion' });
+        await audit('productora.enviada', { id: p.id, calidad: $('obCq').value });
+        await saveProd(p, 'Enviada a la Productora IA (Kaggle)');
+        renderObra();
+      } catch (e) { status('obCloudStatus', e.message, 'err'); }
+    };
+    $('obCloudChk').onclick = async () => {
+      const cfg = await pr.getConfig();
+      try {
+        status('obCloudStatus', 'Consultando…');
+        const st = await pr.getStatus(cfg, p.id);
+        if (st) p.cloud = { ...p.cloud, ...st };
+        const last = p.cloud?.pedidoRevision ? Date.parse(p.cloud.pedidoRevision) : 0;
+        if ((!st || ['generando', 'en_cola'].includes(st.estado)) && Date.now() - last > 10 * 60 * 1000) {
+          await pr.requestCheck(cfg, p.id); p.cloud.pedidoRevision = new Date().toISOString();
+        }
+        await saveProd(p); renderObra();
+      } catch (e) { status('obCloudStatus', e.message, 'err'); }
+    };
+    $('obCloudGet').onclick = async () => {
+      const cfg = await pr.getConfig();
+      try {
+        status('obCloudStatus', 'Descargando el video final…');
+        const blob = await pr.downloadVideo(cfg, p.cloud.video);
+        const inf = p.cloud.video_info || {};
+        let srt = null;
+        try { const r = await pr.downloadVideo(cfg, p.cloud.video.replace(/novela\.mp4$/, 'subtitulos_es.srt')); srt = await r.text(); } catch { /* opcional */ }
+        p.scenes.forEach((x) => (x.dirty = false)); p.clipsImported = true; await saveProd(p, 'Video de la Productora recibido');
+        await sendToReview({ blob, width: inf.ancho, height: inf.alto, duration: inf.duracion, srt }, p.id);
+      } catch (e) { status('obCloudStatus', e.message, 'err'); }
+    };
     $('obMarkClean').onclick = async () => { p.scenes.forEach((s) => (s.dirty = false)); p.clipsImported = true; await reload('Clips generados'); };
     $('obToEditor').onclick = () => hooks.showTab('editor');
     $('obToReview').onclick = () => sendToReview(hooks.editorState.lastExport, p.id);
@@ -620,6 +673,7 @@ export async function initStudio(hooks) {
   // ───────────── CONFIGURACIÓN ─────────────
   async function renderConfig() {
     const est = await storageEstimate();
+    const prc = await pr.getConfig();
     const log = (await auditCol.all()).sort((a, b) => b.at.localeCompare(a.at)).slice(0, 40);
     const brand = [['ydc-logo.png', 'Logotipo (transparente)'], ['ydc-perfil-800.png', 'Foto de perfil 800×800'], ['ydc-portada-2560x1440.png', 'Portada 2560×1440'], ['ydc-portada-zona-segura.png', 'Guía de zona segura'], ['ydc-marca-agua-150.png', 'Marca de agua 150×150'], ['ydc-plantilla-miniatura.png', 'Plantilla de miniatura'], ['ydc-intro-5s-1080p.mp4', 'Intro animada 5 s'], ['ydc-cierre-20s-1080p.mp4', 'Cierre / pantalla final 20 s']];
     $('tab-config').innerHTML = `<div class="grid2"><div class="card"><h2>▶️ Canales de YouTube</h2><p class="muted small">OAuth oficial de Google: Yoha nunca pide ni guarda tu contraseña. Cada canal se conecta por separado y sus datos no se mezclan.</p><button id="cfYt" class="primary">Configurar y conectar canales</button></div>
@@ -629,6 +683,17 @@ export async function initStudio(hooks) {
         <div class="row"><input id="cfTopic" value="${esc(nt.getTopic())}" placeholder="sin tema"><button id="cfNew" class="secondary small">Generar</button></div>
         <div class="row wrap"><button id="cfCopy" class="ghost small">Copiar tema</button><button id="cfTest" class="secondary small">Enviar prueba</button></div>
         <p class="muted small">El tema funciona como contraseña: no lo compartas. Solo se envían: producción lista, error crítico y producción detenida. Nunca avisos por copias.</p><p id="cfStatus" class="status"></p></div></div>
+      <div class="card"><h2>🎬 Productora IA (Kaggle)</h2>
+        <p class="small">Conecta tu repositorio <b>privado</b> para producir novelas en la GPU gratuita de Kaggle desde la app. El token se guarda solo en este dispositivo (no va en respaldos ni en el código).</p>
+        <div class="row wrap"><label>Repositorio privado<input id="cfPrRepo" value="${esc(prc.repo)}"></label><label>Token de GitHub<input id="cfPrTok" type="password" autocomplete="off" placeholder="${prc.token ? '•••••• guardado (escribe para cambiarlo)' : 'github_pat_…'}"></label></div>
+        <div class="row wrap"><button id="cfPrSave" class="primary">Guardar y probar conexión</button><button id="cfPrDel" class="ghost small">Olvidar token</button></div>
+        <p id="cfPrStatus" class="status ${prc.token ? 'ok' : ''}">${prc.token ? 'Token guardado en este dispositivo.' : 'Sin conectar.'}</p>
+        <details><summary class="small">Cómo crear el token (2 minutos)</summary><ol class="small">
+          <li>github.com → tu foto → <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token</b>.</li>
+          <li>Nombre: «Yoha Productora». Vencimiento: 90 días. <b>Repository access → Only select repositories →</b> ${esc(prc.repo.split('/')[1] || 'tu repositorio')}.</li>
+          <li><b>Permissions → Repository permissions → Contents: Read and write</b>. Nada más.</li>
+          <li><b>Generate token</b>, cópialo y pégalo aquí. GitHub no lo vuelve a mostrar.</li></ol>
+          <p class="muted small">La Productora también necesita tu token de Kaggle guardado como secreto <b>KAGGLE_API_TOKEN</b> en ese repositorio (Settings → Secrets and variables → Actions).</p></details></div>
       <div class="grid2"><div class="card"><h2>🎨 Identidad YDC Entertainment Virales</h2>${brand.map(([f, l]) => `<div class="row small"><span style="flex:1">${l}</span><a class="btn ghost small" href="./brand/${f}" download>⬇</a></div>`).join('')}
         <p class="muted small">La foto de perfil de YouTube no puede ser animada: la animación se usa como intro de los videos.</p></div>
       <div class="card"><h2>💾 Respaldo</h2><p class="muted small">Todo se guarda automáticamente en este dispositivo${est ? ` (${(est.used / 1048576).toFixed(0)} MB usados de ~${(est.quota / 1073741824).toFixed(1)} GB)` : ''}. Descarga un respaldo para moverlo a otro equipo.</p>
@@ -636,6 +701,18 @@ export async function initStudio(hooks) {
         <h3>🗣 Lenguaje</h3><p class="small">${esc(CLEAN_POLICY)}</p></div></div>
       <div class="card"><h2>📜 Registro de acciones</h2>${log.map((l) => `<p class="small">${dt(l.at)} · <b>${esc(l.action)}</b> <span class="muted">${esc(JSON.stringify(l.detail).slice(0, 120))}</span></p>`).join('') || '<p class="muted small">Sin acciones registradas.</p>'}</div>`;
     $('cfYt').onclick = () => hooks.showTab('youtube');
+    $('cfPrSave').onclick = async () => {
+      try {
+        const tok = $('cfPrTok').value.trim();
+        const c = await pr.setConfig({ repo: $('cfPrRepo').value, token: tok || prc.token });
+        status('cfPrStatus', 'Probando…');
+        const r = await pr.testConnection(c);
+        await audit('productora.conectada', { repo: r.repo });
+        status('cfPrStatus', `✔ Conectada a ${r.repo}${r.private ? ' (privado)' : ' ⚠ el repositorio es público: tus guiones serían visibles'}.`, r.private ? 'ok' : 'err');
+        $('cfPrTok').value = '';
+      } catch (e) { status('cfPrStatus', e.message, 'err'); }
+    };
+    $('cfPrDel').onclick = async () => { await pr.setConfig({ repo: $('cfPrRepo').value, token: '' }); status('cfPrStatus', 'Token eliminado de este dispositivo.', 'ok'); };
     $('cfLocal').onclick = async () => { try { await nt.enableLocal(); await nt.local('Yoha Video', 'Avisos activados ✔'); status('cfStatus', 'Avisos de la app activados.', 'ok'); } catch (e) { status('cfStatus', e.message, 'err'); } };
     $('cfNew').onclick = () => { $('cfTopic').value = nt.newTopic(); status('cfStatus', 'Tema nuevo generado. Suscríbete a él en la app ntfy y pégalo en el notebook.', 'ok'); };
     $('cfTopic').onchange = () => status('cfStatus', nt.setTopic($('cfTopic').value.trim()) ? 'Tema guardado.' : 'Tema inválido (12–64 letras, números, - o _).', nt.getTopic() ? 'ok' : 'err');

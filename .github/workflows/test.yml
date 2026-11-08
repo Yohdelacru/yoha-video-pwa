@@ -18,6 +18,8 @@ jobs:
       - name: Crear medios de prueba sintéticos
         run: bash scripts/make-test-media.sh test-media
       - run: MEDIA=test-media node tests/run.mjs
+      - name: Productora IA en la app (API de GitHub simulada)
+        run: node tests/productora.mjs test-media/clip_h.mp4
       - name: Motor de Safari (iPhone)
         run: MEDIA=test-media node tests/webkit.mjs
       - uses: actions/upload-artifact@v4

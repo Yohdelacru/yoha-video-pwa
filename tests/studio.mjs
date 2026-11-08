@@ -132,7 +132,7 @@ export async function runStudio({ browser, URL_, MEDIA, OUT, record, probe }) {
   await page.waitForTimeout(500);
   const stChange = await page.evaluate(async () => (await window.__yoha.studio._test.productions.all()).find((p) => p.videoHash)?.status);
   await page.locator('[data-ap] [data-act=aprobado]').first().click();
-  await page.waitForTimeout(800);
+  await page.waitForFunction(() => window.__yoha.studio.publishContext, null, { timeout: 10000 }).catch(() => {});
   const pc = await page.evaluate(() => { const c = window.__yoha.studio.publishContext; return c && { hash: c.hash, action: c.approval.action, visible: !document.getElementById('tab-youtube').hidden }; });
   const upDisabled = await page.isDisabled('#ytUpload');
   record('Aprobación obligatoria (CREAR → REVISAR → APROBAR → PUBLICAR)', stillPending >= 1 && stChange === 'cambios_solicitados' && pc?.action === 'aprobado' && pc.visible && upDisabled ? 'APROBADA' : 'FALLIDA', `pide nota para modificaciones, estado ${stChange} → aprobado; publicar sigue bloqueado sin canal y sin confirmación final`);
