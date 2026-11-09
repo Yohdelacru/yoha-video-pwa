@@ -86,15 +86,17 @@ record('Pide a la Productora revisar Kaggle (commit pequeño)', repo.files.has(`
 
 // 5) Lista → traer el video y enviarlo a revisión
 const mp4 = readFileSync(VIDEO);
-repo.files.set(`producciones/${pid}/novela.mp4`, mp4);
+const half = Math.floor(mp4.length / 2);
+repo.files.set(`producciones/${pid}/novela.mp4.000`, mp4.subarray(0, half));
+repo.files.set(`producciones/${pid}/novela.mp4.001`, mp4.subarray(half));
 repo.files.set(`producciones/${pid}/subtitulos_es.srt`, Buffer.from('1\n00:00:05,300 --> 00:00:07,000\nHola\n'));
-repo.files.set(`producciones/${pid}/estado.json`, Buffer.from(JSON.stringify({ estado: 'lista', mensaje: 'Lista para revisar.', video: `producciones/${pid}/novela.mp4`, video_info: { duracion: 88, ancho: 832, alto: 480, sha256: 'x' }, planos_hechos: 63, planos_total: 63 })));
+repo.files.set(`producciones/${pid}/estado.json`, Buffer.from(JSON.stringify({ estado: 'lista', mensaje: 'Lista para revisar.', video: `producciones/${pid}/novela.mp4`, video_info: { duracion: 88, ancho: 1920, alto: 1080, sha256: 'x', bytes: mp4.length, partes: ['novela.mp4.000', 'novela.mp4.001'] }, planos_hechos: 63, planos_total: 63 })));
 await page.click('#obCloudChk');
 await page.waitForSelector('#obCloudGet:not([hidden])');
 await page.click('#obCloudGet');
 await page.waitForFunction(() => document.querySelector('[data-tab=aprobaciones]')?.classList.contains('active') || /aprobaciones/.test(location.hash), null, { timeout: 15000 }).catch(() => {});
 const p = await page.evaluate(async (id) => window.__yoha.studio._test.productions.get(id), pid);
-record('Video final recibido → «Pendientes de aprobación»', p.status === 'en_revision' && /^[0-9a-f]{64}$/.test(p.videoHash) && p.videoInfo?.size === mp4.length, `estado ${p.status}, ${p.videoInfo?.size} bytes`);
+record('Video final en 2 partes unido sin pérdida → «Pendientes de aprobación»', p.status === 'en_revision' && /^[0-9a-f]{64}$/.test(p.videoHash) && p.videoInfo?.size === mp4.length, `estado ${p.status}, ${p.videoInfo?.size} bytes`);
 record('Nada se publica automáticamente', p.status !== 'publicado' && !(p.approvals || []).length);
 record('Sin errores de JavaScript', errors.length === 0, errors.join(' | '));
 

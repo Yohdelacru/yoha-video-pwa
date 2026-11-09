@@ -124,13 +124,16 @@ export async function runStudio({ browser, URL_, MEDIA, OUT, record, probe }) {
   dialogAnswer = '1';
   await page.click('#toReview');
   await page.waitForSelector('#tab-aprobaciones [data-ap]', { timeout: 15000 });
+  await page.waitForSelector('[data-ap][data-ready]');
   await page.locator('[data-ap] [data-act=cambios_solicitados]').first().click();
   await page.waitForTimeout(300);
   const stillPending = await page.locator('[data-ap]').count();
   await page.locator('[data-ap] [data-note]').first().fill('Más corto el inicio');
+  await page.waitForSelector('[data-ap][data-ready]');
   await page.locator('[data-ap] [data-act=cambios_solicitados]').first().click();
   await page.waitForTimeout(500);
   const stChange = await page.evaluate(async () => (await window.__yoha.studio._test.productions.all()).find((p) => p.videoHash)?.status);
+  await page.waitForSelector('[data-ap][data-ready] [data-act=aprobado]:not([disabled])');
   await page.locator('[data-ap] [data-act=aprobado]').first().click();
   await page.waitForFunction(() => window.__yoha.studio.publishContext, null, { timeout: 10000 }).catch(() => {});
   const pc = await page.evaluate(() => { const c = window.__yoha.studio.publishContext; return c && { hash: c.hash, action: c.approval.action, visible: !document.getElementById('tab-youtube').hidden }; });

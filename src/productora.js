@@ -77,11 +77,22 @@ export async function requestCheck(cfg, id, fetchImpl) {
   await putFile(cfg, `producciones/${safeId(id)}/revisar.json`, new TextEncoder().encode(JSON.stringify({ at: new Date().toISOString() })), 'Revisar estado', fetchImpl);
 }
 
-/** Descarga el video final (≤ 100 MB) desde el repositorio privado. */
+/** Descarga un archivo (≤ 100 MB) desde el repositorio privado. */
 export async function downloadVideo(cfg, path, fetchImpl) {
   const r = await gh(cfg, `/contents/${enc(path)}?ref=${enc(cfg.branch)}`, { accept: 'application/vnd.github.raw', fetchImpl });
   if (!r) throw new Error('El video todavía no está disponible.');
   return new Blob([await r.arrayBuffer()], { type: 'video/mp4' });
+}
+
+/** Descarga el video final; si la Productora lo guardó en partes (límite de 100 MB de GitHub), las une sin pérdida. */
+export async function downloadFinal(cfg, video, info = {}, fetchImpl, onProgress = () => {}) {
+  const partes = info.partes?.length ? info.partes : [video.split('/').pop()];
+  const dir = video.split('/').slice(0, -1).join('/');
+  const blobs = [];
+  for (const [i, nombre] of partes.entries()) { onProgress(i + 1, partes.length); blobs.push(await downloadVideo(cfg, `${dir}/${nombre}`, fetchImpl)); }
+  const blob = new Blob(blobs, { type: 'video/mp4' });
+  if (info.bytes && blob.size !== info.bytes) throw new Error('El video llegó incompleto. Inténtalo de nuevo.');
+  return blob;
 }
 
 /** Estimación honesta de GPU (no medida): minutos por plano × planos; sesiones de 11 h y cuota semanal ~30 h. */

@@ -169,7 +169,7 @@ export async function initStudio(hooks) {
       <h2>🎬 Producir la novela con IA (gratis)</h2>
       <p class="small">Envía esta producción a <b>Kaggle</b> (GPU gratuita) por medio de tu repositorio privado. Allí la IA escribe los diálogos que falten, genera cada escena en video, crea las voces y los subtítulos; después se monta el capítulo con la intro, la marca de agua y el cierre YDC. Al terminar queda en <b>Pendientes de aprobación</b>: nada se publica sin ti.</p>
       <p class="muted small">Estimación (no medida): ${gpu.planos} planos · ~${gpu.horas} h de GPU · ${gpu.sesiones} sesión(es) de Kaggle · ${gpu.semanas} semana(s) de cuota gratuita (~30 h por semana). Los rostros y movimientos generados con modelos gratuitos son aproximados.</p>
-      <div class="row wrap"><label>Calidad<select id="obCq"><option value="borrador">Borrador (más rápida)</option><option value="normal" selected>Normal</option><option value="alta">Alta (más lenta)</option></select></label></div>
+      <div class="row wrap"><label>Calidad<select id="obCq"><option value="cine" selected>Cine (máxima calidad)</option><option value="alta">Alta</option><option value="normal">Normal</option><option value="borrador">Borrador (prueba rápida)</option></select></label></div>
       <div class="row wrap"><button id="obCloudGo" class="primary">🎬 ${p.cloud ? 'Producir de nuevo (solo cambios)' : 'Producir novela con IA'}</button><button id="obCloudChk" class="secondary" ${p.cloud ? '' : 'hidden'}>↻ Actualizar estado</button><button id="obCloudGet" class="primary" ${p.cloud?.estado === 'lista' ? '' : 'hidden'}>⬇ Traer el video y enviarlo a revisión</button></div>
       <p id="obCloudStatus" class="status ${p.cloud?.estado === 'error' ? 'err' : p.cloud?.estado === 'lista' ? 'ok' : ''}">${p.cloud ? esc(cloudText(p.cloud)) : ''}</p>
     </div>
@@ -262,8 +262,8 @@ export async function initStudio(hooks) {
       const cfg = await pr.getConfig();
       try {
         status('obCloudStatus', 'Descargando el video final…');
-        const blob = await pr.downloadVideo(cfg, p.cloud.video);
         const inf = p.cloud.video_info || {};
+        const blob = await pr.downloadFinal(cfg, p.cloud.video, inf, undefined, (i, n) => status('obCloudStatus', `Descargando el video final (parte ${i} de ${n})…`));
         let srt = null;
         try { const r = await pr.downloadVideo(cfg, p.cloud.video.replace(/novela\.mp4$/, 'subtitulos_es.srt')); srt = await r.text(); } catch { /* opcional */ }
         p.scenes.forEach((x) => (x.dirty = false)); p.clipsImported = true; await saveProd(p, 'Video de la Productora recibido');
@@ -617,7 +617,7 @@ export async function initStudio(hooks) {
         <p class="muted small">${p.videoInfo ? `${p.videoInfo.width}×${p.videoInfo.height} · ${Math.round(p.videoInfo.duration)} s · ${(p.videoInfo.size / 1048576).toFixed(1)} MB · huella ${p.videoHash.slice(0, 12)}…` : 'Sin video'}</p>
         ${(() => { const l = checkProduction(p); return l.length ? `<p class="status ${isBlocked(l, p.allowStrongLanguage) ? 'err' : ''}">Lenguaje: ${l.map((f) => `«${esc(f.word)}»`).join(', ')}${isBlocked(l, p.allowStrongLanguage) ? ' — bloquea la aprobación' : ''}</p>` : ''; })()}
         <label>Nota (opcional)<input data-note maxlength="300" placeholder="Qué cambiar o por qué"></label>
-        <div class="row wrap"><button class="primary" data-act="aprobado">APROBAR Y PUBLICAR</button><button class="secondary" data-act="cambios_solicitados">SOLICITAR MODIFICACIONES</button><button class="danger" data-act="rechazado">RECHAZAR</button></div>
+        <div class="row wrap"><button class="primary" data-act="aprobado" disabled>APROBAR Y PUBLICAR</button><button class="secondary" data-act="cambios_solicitados" disabled>SOLICITAR MODIFICACIONES</button><button class="danger" data-act="rechazado" disabled>RECHAZAR</button></div>
         <details><summary>Historial de aprobaciones</summary>${(p.approvals || []).map((a) => `<p class="small">${dt(a.at)} · <b>${esc(a.action)}</b> ${a.note ? `· ${esc(a.note)}` : ''} · ${a.videoHash?.slice(0, 10) || ''}</p>`).join('') || '<p class="muted small">—</p>'}</details></div>`).join('') || '<div class="card"><p class="empty">Nada pendiente. Exporta un video en el Editor y pulsa «Enviar a revisión».</p></div>'}`;
     for (const card of $('tab-aprobaciones').querySelectorAll('[data-ap]')) {
       const p = await productions.get(card.dataset.ap);
@@ -639,6 +639,8 @@ export async function initStudio(hooks) {
         if (action === 'aprobado') await startPublish(p, blob, entry);
         else renderAprobaciones();
       }));
+      card.querySelectorAll('[data-act]').forEach((b) => (b.disabled = false));  // activos solo cuando ya responden
+      card.dataset.ready = '1';
     }
   }
   async function startPublish(p, blob, approval) {
