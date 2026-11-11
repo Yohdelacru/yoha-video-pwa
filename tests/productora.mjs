@@ -48,7 +48,7 @@ await page.fill('#dirText', 'Hazme una novela dominicana de 5 minutos con 3 pers
 await page.click('#dirGo');
 await page.waitForSelector('#obCloudGo');
 const est = await page.textContent('#obCloud');
-record('Tarjeta «Producir la novela con IA» con estimación honesta de GPU', /planos · ~[\d.]+ h de GPU/.test(est) && /no medida/.test(est), est.match(/Estimación[^.]+/)?.[0]);
+record('Tarjeta «Producir la novela con IA» con tiempos de GPU medidos', /planos · ~[\d.]+ h de GPU/.test(est) && /medidos/.test(est), est.match(/Con tiempos[^.]+/)?.[0]);
 await page.click('#obCloudGo');
 record('Sin Productora conectada: indica cómo conectarla', await page.waitForFunction(() => /Configuración/.test(document.querySelector('#obCloudStatus')?.textContent || ''), null, { timeout: 5000 }).then(() => true, () => false));
 
@@ -75,6 +75,11 @@ await page.click('#obCloudGo');
 await page.waitForFunction(() => /En cola/.test(document.querySelector('#obCloudStatus')?.textContent || ''));
 const sent = JSON.parse(repo.files.get(`producciones/${pid}/paquete.json`) || '{}');
 record('Paquete guardado en producciones/<id>/paquete.json', sent.format === 'yoha-production' && sent.scenes?.length > 0 && sent.productora?.calidad === 'borrador', `${sent.scenes?.length} escenas · calidad ${sent.productora?.calidad}`);
+record('Siempre con labios, control de rostros y Wan 2.2', sent.productora?.labios === true && sent.productora?.control_rostros === true && sent.productora?.modelo === 'wan2.2-5b');
+const conDialogo = sent.scenes.filter((x) => (x.dialogue || []).length);
+const okPlan = conDialogo.every((x) => Array.isArray(x.planos) && x.planos.length === x.shots
+  && x.dialogue.every((d, j) => !d.text || x.planos.some((pl) => pl.encuadre === 'primer plano' && pl.foco === d.character && pl.lineas.includes(j))));
+record('Dirección por planos: cada frase en el primer plano de quien la dice', conDialogo.length === 0 || okPlan, `${conDialogo.length} escenas con diálogo · ${conDialogo[0]?.planos?.map((x) => x.encuadre + (x.foco ? ':' + x.foco : '')).join(' / ') || 'sin diálogo aún'}`);
 record('Autenticación con el token del dispositivo', repo.auth.every((a) => a === 'Bearer github_pat_PRUEBA123'));
 
 // 4) La Productora (simulada) informa progreso
@@ -83,6 +88,28 @@ await page.click('#obCloudChk');
 await page.waitForFunction(() => /20\/63 planos/.test(document.querySelector('#obCloudStatus')?.textContent || ''));
 record('Estado en vivo: progreso de planos', true, await page.textContent('#obCloudStatus'));
 record('Pide a la Productora revisar Kaggle (commit pequeño)', repo.files.has(`producciones/${pid}/revisar.json`));
+
+// 4b) Bloqueada por control de calidad → informe visible, se puede ver para revisar y rehacer UN plano
+const sc0 = sent.scenes[0];
+repo.files.set(`producciones/${pid}/novela.mp4`, readFileSync(VIDEO));
+repo.files.set(`producciones/${pid}/estado.json`, Buffer.from(JSON.stringify({ estado: 'error', mensaje: 'Control de calidad facial: e001_p02: cara ajena o duplicada en el encuadre', video: `producciones/${pid}/novela.mp4`,
+  video_info: { duracion: 10, ancho: 1920, alto: 1080, bytes: readFileSync(VIDEO).length, audio: { ok: true, lineas: 2, lineas_audibles: 2, coincidencia: 1 },
+    calidad_facial: { labios: [{ plano: `e${String(sc0.n).padStart(3, '0')}_p01_${sc0.hash}.mp4`, correlacion_antes: 0.1, correlacion_despues: 0.5 }],
+      rostros: { [`e${String(sc0.n).padStart(3, '0')}_p02_${sc0.hash}.mp4`]: { aprobado: false, identidad_media: 0.2, problemas: ['cara ajena o duplicada en el encuadre'] } } } } })));
+await page.click('#obCloudChk');
+await page.waitForSelector('[data-rehacer]');
+record('Informe de calidad real visible (audio, labios, rostros)', /Whisper entiende 100/.test(await page.textContent('#obCloud')) && /cara ajena/.test(await page.textContent('#obCloud')));
+await page.click('#obCloudPeek');
+record('Video bloqueado: se puede ver para revisar sin pasar a aprobación', await page.waitForSelector('#obPeek video', { timeout: 15000 }).then(() => true, () => false));
+await page.click(`[data-rehacer="${sc0.id}:1"]`);
+await page.waitForFunction(() => /marcado/.test(document.querySelector('#obCloudStatus')?.textContent || ''), null, { timeout: 8000 }).catch(async () => console.log('estado:', await page.textContent('#obCloudStatus'), '| errores:', errors.join(' | ')));
+await page.click('#obCloudGo');
+await page.waitForFunction(() => /En cola/.test(document.querySelector('#obCloudStatus')?.textContent || ''));
+const sent2 = JSON.parse(repo.files.get(`producciones/${pid}/paquete.json`));
+const s2 = sent2.scenes.find((x) => x.id === sc0.id);
+const pedido = s2.planos ? s2.planos[1]?.rehacer : s2.rehacer?.['1'];
+const otros = s2.planos ? s2.planos.filter((x) => x.rehacer).length : Object.keys(s2.rehacer || {}).length;
+record('«Rehacer este plano» pide solo ese plano y conserva los demás', pedido === 1 && otros === 1 && s2.hash === sc0.hash, `plano 2 rehacer=${pedido} · mismo hash ${s2.hash === sc0.hash}`);
 
 // 5) Lista → traer el video y enviarlo a revisión
 const mp4 = readFileSync(VIDEO);

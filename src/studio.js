@@ -3,7 +3,7 @@
 // Protección, Marketing, Revenue, Yoha Bank, Calendario, Pendientes de aprobación, Publicados, Configuración.
 // Todo se guarda automáticamente en el dispositivo (IndexedDB). Nada se publica ni se envía sin aprobación.
 import { col, characters as charStore, files as fileStore, kv, audit, sha256Blob, uid, storageEstimate } from './store.js';
-import { buildProduction, estimate, writerBrief, importWriterJson, productionPackage, FORMATS, EMOTIONS, GESTURES, MOVES, MUSIC_MOODS, CAMERAS, autoDirect } from './director.js';
+import { buildProduction, estimate, writerBrief, importWriterJson, productionPackage, scenePlan, FORMATS, EMOTIONS, GESTURES, MOVES, MUSIC_MOODS, CAMERAS, autoDirect } from './director.js';
 import { applyProductionCommand, PRODUCTION_EXAMPLES } from './commands.js';
 import { checkProduction, isBlocked, CLEAN_POLICY } from './language.js';
 import * as yt from './youtube.js';
@@ -15,6 +15,26 @@ import { exportVideo } from './engine.js';
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+function qualityReport(p) {
+  const vi = p.cloud?.video_info; if (!vi) return '';
+  const au = vi.audio, cf = vi.calidad_facial || {};
+  const filas = [];
+  if (au) filas.push(`<li>${au.ok ? '✅' : '❌'} Audio: ${au.lineas_audibles}/${au.lineas} líneas audibles · Whisper entiende ${Math.round((au.coincidencia || 0) * 100)} %</li>`);
+  for (const x of cf.labios || []) filas.push(`<li>👄 ${esc(x.plano)}: ${x.escucha ? `escucha · boca en reposo ${x.apertura_silencio ?? '—'}` : `correlación boca↔voz ${x.correlacion_antes ?? '—'} → ${x.correlacion_despues ?? '—'}`}</li>`);
+  const planos = [];
+  for (const sc of p.scenes) (scenePlan(sc) || Array.from({ length: sc.shots || 1 }, () => ({}))).forEach((pl, k) => planos.push({ sc, k, pl }));
+  const fila = ({ sc, k, pl }) => {
+    const n = `e${String(sc.n).padStart(3, '0')}_p${String(k + 1).padStart(2, '0')}_`;
+    const r = Object.entries(cf.rostros || {}).find(([name]) => name.startsWith(n))?.[1];
+    const est = r ? (r.aprobado ? '✅' : '⚠️') : '·';
+    return `<li>${est} Escena ${sc.n} · plano ${k + 1} ${pl.encuadre ? `(${esc(pl.encuadre)}${pl.foco ? ` de ${esc(pl.foco)}` : ''})` : ''}${r ? ` · identidad ${r.identidad_media ?? '—'}${r.problemas?.length ? ` · ${esc(r.problemas.join(', '))}` : ''}` : ''}
+      <button class="secondary small" data-rehacer="${esc(sc.id)}:${k}">↺ Rehacer este plano</button>${sc.rehacer?.[k] ? ` <span class="small muted">(pedido ${sc.rehacer[k]})</span>` : ''}</li>`;
+  };
+  return `<details class="small" ${p.cloud?.estado === 'error' ? 'open' : ''}><summary>Control de calidad (real, medido en el video)</summary><ul>${filas.join('')}${planos.map(fila).join('')}</ul>
+    <p class="muted small">«Rehacer este plano» regenera SOLO ese plano en el próximo envío; los aprobados se conservan.</p>
+    ${p.cloud?.video && p.cloud?.estado !== 'lista' ? '<button id="obCloudPeek" class="secondary">👁 Ver el video para revisarlo (no aprobado)</button><div id="obPeek"></div>' : ''}
+    <button id="obFacesBtn" class="secondary">🪪 Rostros oficiales de los personajes</button></details>`;
+}
 const cloudText = (c) => [c.mensaje && c.mensaje.startsWith(pr.STATES[c.estado] || '¬') ? '' : pr.STATES[c.estado] || c.estado, c.mensaje, c.planos_total ? `${c.planos_hechos || 0}/${c.planos_total} planos` : '', c.actualizado ? `actualizado ${dt(c.actualizado)}` : ''].filter(Boolean).join(' · ');
 const dt = (s) => (s ? new Date(s).toLocaleString('es-DO', { dateStyle: 'medium', timeStyle: 'short' }) : '—');
 const STATUS = { borrador: ['Borrador', 'warn'], en_revision: ['En revisión', 'warn'], cambios_solicitados: ['Cambios solicitados', 'warn'], aprobado: ['Aprobado', 'ok'], rechazado: ['Rechazado', 'no'], publicado: ['Publicado', 'ok'] };
@@ -122,7 +142,7 @@ export async function initStudio(hooks) {
     const scripted = p.scenes.filter((s) => s.status === 'guion_listo' || (s.dialogue || []).length || s.narration).length;
     const done = { Idea: true, Guion: scripted === p.scenes.length, Personajes: cast.length > 0, Escenarios: true, 'Diálogos': p.scenes.some((s) => (s.dialogue || []).length), Escenas: true, 'Dirección': true, 'Actuación': p.scenes.some((s) => Object.keys(s.acting || {}).length), Música: Boolean(p.music?.mood), Exportación: Boolean(p.videoHash), 'Visual (IA)': Boolean(p.clipsImported), Voces: Boolean(p.voicesImported), Montaje: Boolean(p.videoHash), Subtítulos: Boolean(p.videoHash), Efectos: p.scenes.some((s) => s.sfx) };
     const charName = (cid) => cast.find((c) => c.id === cid)?.name || '—';
-    const gpu = pr.gpuEstimate(productionPackage(p, S.chars, {}));
+    const gpu = pr.gpuEstimate(productionPackage(p, S.chars, {}), p.modelo || 'wan2.2-5b');
     $('tab-obra').innerHTML = `
     <div class="card">
       <div class="row wrap" style="justify-content:space-between"><h2 style="margin:0">${esc(p.title)}</h2><div>${tag(p.status)} ${p.seriesId ? `<span class="pill">Capítulo ${p.episode}</span>` : ''}</div></div>
@@ -168,10 +188,13 @@ export async function initStudio(hooks) {
     <div class="card" id="obCloud">
       <h2>🎬 Producir la novela con IA (gratis)</h2>
       <p class="small">Envía esta producción a <b>Kaggle</b> (GPU gratuita) por medio de tu repositorio privado. Allí la IA escribe los diálogos que falten, genera cada escena en video, crea las voces y los subtítulos; después se monta el capítulo con la intro, la marca de agua y el cierre YDC. Al terminar queda en <b>Pendientes de aprobación</b>: nada se publica sin ti.</p>
-      <p class="muted small">Estimación (no medida): ${gpu.planos} planos · ~${gpu.horas} h de GPU · ${gpu.sesiones} sesión(es) de Kaggle · ${gpu.semanas} semana(s) de cuota gratuita (~30 h por semana). Los rostros y movimientos generados con modelos gratuitos son aproximados.</p>
-      <div class="row wrap"><label>Calidad<select id="obCq"><option value="cine" selected>Cine (máxima calidad)</option><option value="alta">Alta</option><option value="normal">Normal</option><option value="borrador">Borrador (prueba rápida)</option></select></label></div>
+      <p class="muted small">Con tiempos medidos en GPU T4: ${gpu.planos} planos · ~${gpu.horas} h de GPU · ${gpu.sesiones} sesión(es) de Kaggle · ${gpu.semanas} semana(s) de cuota gratuita (~30 h por semana). Siempre con primeros planos en los diálogos, labios sincronizados (MuseTalk), control de rostros y voces verificadas.</p>
+      <div class="row wrap"><label>Calidad<select id="obCq"><option value="cine" selected>Cine (máxima calidad)</option><option value="alta">Alta</option><option value="normal">Normal</option><option value="borrador">Borrador (prueba rápida)</option></select></label>
+        <label>Modelo de video<select id="obModel">${Object.entries(pr.MODELOS).map(([k, v]) => `<option value="${k}" ${(p.modelo || 'wan2.2-5b') === k ? 'selected' : ''}>${esc(v.nombre)} · ~${v.min} min/plano</option>`).join('')}</select></label></div>
       <div class="row wrap"><button id="obCloudGo" class="primary">🎬 ${p.cloud ? 'Producir de nuevo (solo cambios)' : 'Producir novela con IA'}</button><button id="obCloudChk" class="secondary" ${p.cloud ? '' : 'hidden'}>↻ Actualizar estado</button><button id="obCloudGet" class="primary" ${p.cloud?.estado === 'lista' ? '' : 'hidden'}>⬇ Traer el video y enviarlo a revisión</button></div>
       <p id="obCloudStatus" class="status ${p.cloud?.estado === 'error' ? 'err' : p.cloud?.estado === 'lista' ? 'ok' : ''}">${p.cloud ? esc(cloudText(p.cloud)) : ''}</p>
+      ${qualityReport(p)}
+      <div id="obFaces"></div>
     </div>
 
     <div class="card">
@@ -237,7 +260,8 @@ export async function initStudio(hooks) {
       try {
         status('obCloudStatus', 'Enviando a la Productora…');
         const pkg = productionPackage(p, S.chars, { includePhotos: $('obPhotos').checked });
-        await pr.sendProduction(cfg, pkg, { ntfy: nt.getTopic() || '', calidad: $('obCq').value, intento: (p.cloud?.intento || 0) + 1 });
+        p.modelo = $('obModel').value;
+        await pr.sendProduction(cfg, pkg, { ntfy: nt.getTopic() || '', calidad: $('obCq').value, modelo: p.modelo, intento: (p.cloud?.intento || 0) + 1 });
         p.cloud = { estado: 'en_cola', mensaje: 'Enviada. La Productora la lanza en Kaggle en 1–3 minutos.', enviado: new Date().toISOString(), intento: (p.cloud?.intento || 0) + 1 };
         Object.assign(p, { stage: 'produccion' });
         await audit('productora.enviada', { id: p.id, calidad: $('obCq').value });
@@ -269,6 +293,43 @@ export async function initStudio(hooks) {
         p.scenes.forEach((x) => (x.dirty = false)); p.clipsImported = true; await saveProd(p, 'Video de la Productora recibido');
         await sendToReview({ blob, width: inf.ancho, height: inf.alto, duration: inf.duracion, srt }, p.id);
       } catch (e) { status('obCloudStatus', e.message, 'err'); }
+    };
+    document.querySelectorAll('[data-rehacer]').forEach((b) => (b.onclick = async () => {
+      const [sid, k] = b.dataset.rehacer.split(':'); const sc = p.scenes.find((x) => x.id === sid); if (!sc) return;
+      sc.rehacer = { ...(sc.rehacer || {}), [k]: ((sc.rehacer || {})[k] || 0) + 1 }; sc.dirty = true;
+      await saveProd(p, `Plano ${Number(k) + 1} de la escena ${sc.n} marcado para rehacer`); await renderObra();
+      status('obCloudStatus', `Plano ${Number(k) + 1} de la escena ${sc.n} marcado. Pulsa «Producir de nuevo (solo cambios)»: se regenera solo ese plano.`);
+    }));
+    if ($('obCloudPeek')) $('obCloudPeek').onclick = async () => {
+      const cfg = await pr.getConfig();
+      try {
+        status('obCloudStatus', 'Descargando para revisión…');
+        const blob = await pr.downloadFinal(cfg, p.cloud.video, p.cloud.video_info || {});
+        $('obPeek').innerHTML = `<video controls playsinline src="${URL.createObjectURL(blob)}" style="width:100%;margin-top:8px"></video><p class="small muted">Solo para revisión: no pasa a aprobación mientras el control de calidad lo bloquee.</p>`;
+        status('obCloudStatus', cloudText(p.cloud));
+      } catch (e) { status('obCloudStatus', e.message, 'err'); }
+    };
+    if ($('obFacesBtn')) $('obFacesBtn').onclick = async () => {
+      const cfg = await pr.getConfig(); const box = $('obFaces');
+      try {
+        box.innerHTML = '<p class="small">Buscando los rostros generados…</p>';
+        const dir = `producciones/${p.id.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40)}/referencias`;
+        const names = (await pr.listDir(cfg, dir)).filter((n) => n.endsWith('.png'));
+        if (!names.length) { box.innerHTML = '<p class="small muted">Aún no hay rostros generados para esta producción.</p>'; return; }
+        const items = await Promise.all(names.map(async (n) => ({ n, url: URL.createObjectURL(new Blob([await pr.downloadVideo(cfg, `${dir}/${n}`)], { type: 'image/png' })) })));
+        box.innerHTML = `<p class="small">Elige el rostro OFICIAL de cada personaje (se usará en todas las escenas y capítulos):</p><div class="row wrap">${items.map((x) => {
+          const cid = S.chars.find((c) => x.n.replace('.png', '').endsWith(`_${c.id}`) || x.n === `${c.id}.png`)?.id;
+          return `<figure style="width:150px"><img src="${x.url}" style="width:150px;border-radius:8px"><figcaption class="small">${esc(x.n)}</figcaption>${cid ? `<button class="secondary small" data-oficial="${esc(cid)}" data-url="${x.url}">Oficial de ${esc(S.chars.find((c) => c.id === cid)?.name || cid)}</button>` : ''}</figure>`;
+        }).join('')}</div>`;
+        box.querySelectorAll('[data-oficial]').forEach((b) => (b.onclick = async () => {
+          const img = new Image(); img.src = b.dataset.url; await img.decode();
+          const k = Math.min(1, 512 / Math.max(img.width, img.height)); const c = document.createElement('canvas');
+          c.width = Math.round(img.width * k); c.height = Math.round(img.height * k); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          const bytes = new Uint8Array(await (await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.88))).arrayBuffer());
+          await pr.setOfficialFace(cfg, b.dataset.oficial, bytes); await audit('rostro.oficial', { personaje: b.dataset.oficial });
+          b.textContent = '✅ Fijado como oficial'; b.disabled = true;
+        }));
+      } catch (e) { box.innerHTML = `<p class="status err">${esc(e.message)}</p>`; }
     };
     $('obMarkClean').onclick = async () => { p.scenes.forEach((s) => (s.dirty = false)); p.clipsImported = true; await reload('Clips generados'); };
     $('obToEditor').onclick = () => hooks.showTab('editor');

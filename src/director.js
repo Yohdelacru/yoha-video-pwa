@@ -265,8 +265,33 @@ export const STYLE_TEXT = {
   animacion2d: '2D hand-drawn animation style, clean lines, vibrant colors',
   documental: 'documentary footage, natural light, handheld realism',
 };
+/** Dirección por planos: plano general para situar, primer plano de quien habla en cada frase y plano de reacción de quien escucha.
+ * Cada frase cae en el primer plano de su personaje (labios sincronizados); la boca de quien escucha queda en reposo. */
+export function planShots(scene) {
+  const lines = (scene.dialogue || []).map((d, j) => ({ ...d, j })).filter((d) => d.text && d.character);
+  if (!lines.length) return null;
+  const planos = [];
+  if ((scene.characters || []).length >= 2 || scene.narration) planos.push({ encuadre: 'plano general', foco: null, lineas: [] });
+  for (const d of lines) {
+    const prev = planos[planos.length - 1];
+    const prevTxt = prev?.lineas?.map((j) => scene.dialogue[j].text).join(' ') || '';
+    if (prev && prev.foco === d.character && prev.encuadre === 'primer plano' && (prevTxt + d.text).length <= 90) prev.lineas.push(d.j);
+    else planos.push({ encuadre: 'primer plano', foco: d.character, lineas: [d.j], emocion: d.emotion || scene.acting?.[d.character]?.emotion });
+  }
+  const last = lines[lines.length - 1].character;
+  const oyente = (scene.characters || []).find((c) => c !== last && lines.some((d) => d.character === c)) || (scene.characters || []).find((c) => c !== last);
+  if (oyente) planos.push({ encuadre: 'primer plano', foco: oyente, lineas: [], accion: 'listening silently, emotional reaction, lips closed' });
+  return planos;
+}
+export function scenePlan(s) {
+  const base = s.planos || planShots(s);
+  if (!base) return null;
+  return base.map((p, k) => ({ ...p, ...(s.rehacer?.[k] ? { rehacer: s.rehacer[k] } : {}) }));
+}
 export function sceneHash(s) {
-  const key = JSON.stringify([s.description, s.descriptionEn, s.location, s.time, s.camera, s.characters, s.acting, s.seed, s.shots]);
+  const pl = scenePlan(s);
+  const key = JSON.stringify([s.description, s.descriptionEn, s.location, s.time, s.camera, s.characters, s.acting, s.seed, pl ? pl.length : s.shots]
+    .concat(pl ? [pl.map((p) => ({ encuadre: p.encuadre, foco: p.foco, lineas: p.lineas }))] : []));
   let h = 2166136261; for (let i = 0; i < key.length; i++) { h ^= key.charCodeAt(i); h = Math.imul(h, 16777619); }
   return (h >>> 0).toString(16).padStart(8, '0');
 }
@@ -280,7 +305,8 @@ export function productionPackage(prod, chars, { includePhotos = false, onlyDirt
     characters: cast.map((c) => ({ id: c.id, name: c.name, role: c.role, appearance: c.appearance, wardrobe: c.wardrobe, voice: c.voice, voiceEn: c.voiceEn || 'af_heart', seed: c.seed,
       references: includePhotos && c.consent?.given ? (c.photos || []).map((p) => p.dataUrl) : [], consent: (c.photos || []).length ? c.consent : null })),
     scenes: prod.scenes.filter((s) => !onlyDirty || s.dirty).map((s) => ({
-      id: s.id, n: s.n, title: s.title, seconds: s.seconds, shots: s.shots, seed: s.seed, hash: sceneHash(s), characters: s.characters, acting: s.acting,
+      id: s.id, n: s.n, title: s.title, seconds: s.seconds, shots: scenePlan(s)?.length || s.shots, seed: s.seed, hash: sceneHash(s), characters: s.characters, acting: s.acting,
+      ...(scenePlan(s) ? { planos: scenePlan(s) } : {}), ...(s.rehacer && !scenePlan(s) ? { rehacer: s.rehacer } : {}),
       location: s.location, time: s.time, camera: s.camera, description: s.description, descriptionEn: s.descriptionEn,
       prompt: shotPrompt(s, cast, styleText), narration: s.narration, dialogue: s.dialogue, dialogueEn: s.dialogueEn, musicMood: s.musicMood, sfx: s.sfx,
     })),

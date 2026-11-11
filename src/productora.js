@@ -10,8 +10,12 @@ export const STATES = {
   en_cola: 'En cola', generando: 'Generando escenas en Kaggle', montando: 'Montando el video final',
   lista: 'Lista para revisar', error: 'Error', reintentar: 'Reintentando',
 };
-// Minutos de GPU estimados por plano de ~5 s en T4 (estimación, no medida) y sesiones de 11 h.
-export const MIN_POR_PLANO = 10;
+// Minutos de GPU MEDIDOS por plano de ~5 s en T4 (pruebas reales del 9–10 nov 2026, calidad Cine) y sesiones de 11 h.
+export const MODELOS = {
+  'wan2.2-5b': { nombre: 'Wan 2.2 (mejor imagen, rostros desde referencia)', min: 120 },
+  'wan2.1-1.3b': { nombre: 'Wan 2.1 (más rápido, rostros menos estables)', min: 52 },
+};
+export const MIN_POR_PLANO = MODELOS['wan2.2-5b'].min;
 
 export async function getConfig() { return { ...DEFAULTS, ...((await kv.get(KEY)) || {}) }; }
 export async function setConfig(c) {
@@ -58,10 +62,11 @@ async function putFile(cfg, path, bytes, message, fetchImpl) {
 const safeId = (id) => String(id).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
 
 /** Envía (o reenvía con cambios) la producción. La Productora solo regenera las escenas modificadas. */
-export async function sendProduction(cfg, pkg, { ntfy = '', calidad = 'normal', marca = true, intento = 0 } = {}, fetchImpl) {
+export async function sendProduction(cfg, pkg, { ntfy = '', calidad = 'cine', marca = true, intento = 0, modelo = 'wan2.2-5b' } = {}, fetchImpl) {
   const id = safeId(pkg.id);
   if (!id) throw new Error('La producción no tiene identificador.');
-  const data = { ...pkg, productora: { ntfy, calidad, marca, intento, enviado: new Date().toISOString() } };
+  // Siempre con labios sincronizados, control de rostros y voces verificadas: sin ellos la Productora no deja la versión «lista».
+  const data = { ...pkg, productora: { ntfy, calidad, marca, intento, modelo, voz: 'chatterbox', musica: true, labios: true, control_rostros: true, reintentos_rostro: 2, enviado: new Date().toISOString() } };
   await putFile(cfg, `producciones/${id}/paquete.json`, new TextEncoder().encode(JSON.stringify(data)), `Producir: ${String(pkg.title || id).slice(0, 60)}`, fetchImpl);
   return id;
 }
@@ -75,6 +80,18 @@ export async function getStatus(cfg, id, fetchImpl) {
 /** Pide a la Productora que revise ahora (un commit pequeño dispara el flujo; no requiere más permisos). */
 export async function requestCheck(cfg, id, fetchImpl) {
   await putFile(cfg, `producciones/${safeId(id)}/revisar.json`, new TextEncoder().encode(JSON.stringify({ at: new Date().toISOString() })), 'Revisar estado', fetchImpl);
+}
+
+/** Lista los archivos de una carpeta del repositorio (rama de producciones). */
+export async function listDir(cfg, path, fetchImpl) {
+  const r = await gh(cfg, `/contents/${enc(path)}?ref=${enc(cfg.branch)}`, { fetchImpl });
+  return r ? (await r.json()).filter((x) => x.type === 'file').map((x) => x.name) : [];
+}
+
+/** Fija la referencia OFICIAL de un personaje (personajes/<id>.jpg): la Productora la usa en todas las escenas y capítulos. */
+export async function setOfficialFace(cfg, charId, jpegBytes, fetchImpl) {
+  if (jpegBytes.length > 120_000) throw new Error('La referencia debe pesar 120 KB o menos.');
+  await putFile(cfg, `personajes/${safeId(charId)}.jpg`, jpegBytes, `Rostro oficial: ${safeId(charId)}`, fetchImpl);
 }
 
 /** Descarga un archivo (≤ 100 MB) desde el repositorio privado. */
@@ -95,9 +112,9 @@ export async function downloadFinal(cfg, video, info = {}, fetchImpl, onProgress
   return blob;
 }
 
-/** Estimación honesta de GPU (no medida): minutos por plano × planos; sesiones de 11 h y cuota semanal ~30 h. */
-export function gpuEstimate(pkg) {
+/** Estimación de GPU con tiempos MEDIDOS por plano; sesiones de 11 h y cuota semanal ~30 h (+ referencias, voces, labios y control). */
+export function gpuEstimate(pkg, modelo = 'wan2.2-5b') {
   const planos = (pkg.scenes || []).reduce((a, s) => a + Number(s.shots || 1), 0);
-  const horas = (planos * MIN_POR_PLANO) / 60 + 0.5; // + instalación, guion y voces
+  const horas = (planos * (MODELOS[modelo] || MODELOS['wan2.2-5b']).min) / 60 + 0.8;
   return { planos, horas: Math.round(horas * 10) / 10, sesiones: Math.max(1, Math.ceil(horas / 10.5)), semanas: Math.round((horas / 30) * 10) / 10 };
 }
